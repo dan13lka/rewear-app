@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RE:WEAR</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0d0d0d; color: #ffffff; padding: 16px; padding-bottom: 80px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .logo { font-size: 28px; font-weight: 800; letter-spacing: 2px; }
+    .logo span { color: #8c8c8c; }
+    .slogan { font-size: 12px; color: #8c8c8c; margin-top: 4px; letter-spacing: 1px; }
+    .banner { background: #1a1a1a; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #2a2a2a; }
+    .banner h2 { font-size: 20px; margin-bottom: 8px; font-weight: 700; }
+    .banner p { font-size: 13px; color: #a0a0a0; margin-bottom: 16px; }
+    .btn-main { background: #ffffff; color: #000000; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .card { background: #161616; border-radius: 12px; overflow: hidden; border: 1px solid #222222; }
+    .card-img { width: 100%; height: 160px; object-fit: cover; background: #222; }
+    .card-info { padding: 10px; }
+    .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-price { font-size: 14px; font-weight: 700; }
+    .card-meta { font-size: 11px; color: #8c8c8c; margin-top: 4px; }
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d0d; border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 12px 0; }
+    .nav-item { color: #8c8c8c; font-size: 11px; text-decoration: none; text-align: center; }
+    .nav-item.active { color: #ffffff; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo"><span>RE:</span>WEAR</div>
+    <div class="slogan">ВИНТАЖ / Б/У / ОРИГИНАЛ</div>
+  </div>
+
+  <div class="banner">
+    <h2>Вещи, которые имеют историю.</h2>
+    <p>Лучшие вещи не стареют. Они просто ждут своего человека.</p>
+    <button class="btn-main">Перейти к каталогу &rarr;</button>
+  </div>
+
+  <div class="section-title"> Популярные товары </div>
+
+  <div class="grid">
+    <div class="card">
+      <img class="card-img" src="https://images.unsplash.com/photo-1544441893-675973e31985?w=500" alt="Nike Windbreaker">
+      <div class="card-info">
+        <div class="card-title">Nike 90s Windbreaker</div>
+        <div class="card-price">450 000 сум</div>
+        <div class="card-meta">Размер: L • 8/10</div>
+      </div>
+    </div>
+    <div class="card">
+      <img class="card-img" src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500" alt="Adidas Jacket">
+      <div class="card-info">
+        <div class="card-title">Adidas Vintage Jacket</div>
+        <div class="card-price">380 000 сум</div>
+        <div class="card-meta">Размер: M • 8/10</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="nav-item active">Главная</div>
+    <div class="nav-item">Каталог</div>
+    <div class="nav-item">Избранное</div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+  </script>
+</body>
+</html>
