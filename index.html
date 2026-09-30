@@ -345,6 +345,11 @@
   color: #0d0d0d;
   border-color: #ffffff;
 }
+  .cart-item-size {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
   </style>
 </head>
 <body>
@@ -543,13 +548,15 @@
     
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
+    let cartSizes = JSON.parse(localStorage.getItem('rewear_cart_sizes') || '{}');
     let activeModalIndex = null;
 
-    function saveState() {
-      localStorage.setItem('rewear_favs', JSON.stringify(favorites));
-      localStorage.setItem('rewear_cart', JSON.stringify(cart));
-      updateCartBadge();
-    }
+   function saveState() {
+  localStorage.setItem('rewear_favs', JSON.stringify(favorites));
+  localStorage.setItem('rewear_cart', JSON.stringify(cart));
+  localStorage.setItem('rewear_cart_sizes', JSON.stringify(cartSizes));
+  updateCartBadge();
+}
 
     async function initAndLoad() {
       if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -812,27 +819,48 @@
       }
     }
 
-    function toggleCartFromModal() {
-      if (activeModalIndex === null) return;
-      const p = loadedProducts[activeModalIndex];
-      const strId = String(p.id);
+   function toggleCartFromModal() {
+  if (activeModalIndex === null) return;
+  const p = loadedProducts[activeModalIndex];
+  const strId = String(p.id);
 
-      if (cart.includes(strId)) {
-        cart = cart.filter(id => id !== strId);
-      } else {
-        cart.push(strId);
-      }
-      saveState();
-      closeProduct();
+  // Собираем доступные размеры товара
+  let cleanSizes = [];
+  if (Array.isArray(p.sizes)) {
+    cleanSizes = p.sizes.map(s => String(s).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+  } else if (typeof p.sizes === 'string' && p.sizes.trim()) {
+    cleanSizes = p.sizes.replace(/[\{\}\"\']/g, '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  // Если размеров больше 1 и не выбран — просим выбрать
+  if (cleanSizes.length > 1 && !selectedSize) {
+    tg.showAlert('Пожалуйста, выберите размер');
+    return;
+  }
+
+  // Итоговый размер: выбранный ИЛИ единственный ИЛИ null
+  const finalSize = selectedSize || (cleanSizes[0] || null);
+
+  if (cart.includes(strId)) {
+    cart = cart.filter(id => id !== strId);
+    delete cartSizes[strId];
+  } else {
+    cart.push(strId);
+    if (finalSize) {
+      cartSizes[strId] = finalSize;
     }
+  }
+  saveState();
+  closeProduct();
+}
 
-    function removeFromCart(id) {
-      const strId = String(id);
-      cart = cart.filter(itemId => itemId !== strId);
-      saveState();
-      renderCart();
-    }
-
+  function removeFromCart(id) {
+  const strId = String(id);
+  cart = cart.filter(itemId => itemId !== strId);
+  delete cartSizes[strId];
+  saveState();
+  renderCart();
+}
     function updateCartBadge() {
       document.getElementById('cart-count').innerText = cart.length;
     }
@@ -857,16 +885,20 @@
           totalSum += Number(product.price || 0);
           let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
           
-          listEl.innerHTML += `
-            <div class="cart-item">
-              <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
-              <div class="cart-item-info">
-                <div class="cart-item-title">${product.title || 'Без названия'}</div>
-                <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
-              </div>
-              <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
-            </div>
-          `;
+        const size = cartSizes[String(product.id)];
+const sizeHtml = size ? `<div class="cart-item-size">Размер: ${size}</div>` : '';
+
+listEl.innerHTML += `
+  <div class="cart-item">
+    <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
+    <div class="cart-item-info">
+      <div class="cart-item-title">${product.title || 'Без названия'}</div>
+      ${sizeHtml}
+      <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
+    </div>
+    <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
+  </div>
+`;
         });
 
         document.getElementById('cart-total-count').innerText = cartProducts.length;
@@ -879,16 +911,16 @@
   if (cartProducts.length === 0) return;
 
   let total = 0;
-  const itemsForOrder = cartProducts.map(p => {
-    total += Number(p.price || 0);
-    return {
-      id: p.id,
-      title: p.title || 'Без названия',
-      price: Number(p.price || 0),
-      size: p.size || '',
-      shop: p.shop || ''
-    };
-  });
+ const itemsForOrder = cartProducts.map(p => {
+  total += Number(p.price || 0);
+  return {
+    id: p.id,
+    title: p.title || 'Без названия',
+    price: Number(p.price || 0),
+    size: cartSizes[String(p.id)] || '',
+    shop: p.shop || ''
+  };
+});
 
   const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
   const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
@@ -938,17 +970,19 @@
   // 3. Открываем чат с тобой (как раньше)
   let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
   cartProducts.forEach((p, idx) => {
-    const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
-    message += `${idx + 1}. ${p.title} (Размер: ${p.size || 'не указан'})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
-  });
+  const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
+  const size = cartSizes[String(p.id)] || 'не указан';
+  message += `${idx + 1}. ${p.title} (Размер: ${size})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
+});
   message += `\nИтого: ${total.toLocaleString('ru-RU')} сум`;
 
   const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
 
   // 4. Чистим корзину
   cart = [];
-  saveState();
-  renderCart();
+cartSizes = {};
+saveState();
+renderCart();
 
   if (tg && tg.openTelegramLink) {
     tg.openTelegramLink(targetUrl);
