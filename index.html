@@ -11,35 +11,16 @@
     body { background-color: #0d0d0d !important; color: #ffffff !important; padding: 16px; padding-bottom: 90px; }
     
     /* ШАПКА */
-    .header { text-align: center; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header { text-align: center; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
     .logo span { color: #8c8c8c; }
     .cart-btn { position: relative; background: #161616; border: 1px solid #262626; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .cart-badge { position: absolute; top: -4px; right: -4px; background: #ffffff; color: #0d0d0d; font-size: 10px; font-weight: 800; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
-    .banner { background: #161616; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #222222; text-align: left;}
-    .banner h2 { font-size: 20px; margin-bottom: 8px; font-weight: 700; color: #ffffff; }
-    .banner p { font-size: 13px; color: #a0a0a0; margin-bottom: 16px; }
-    
-    .btn-main, button.btn-main { 
-      background-color: #8c8c8c !important; 
-      color: #0d0d0d !important; 
-      border: none !important; 
-      padding: 10px 20px; 
-      border-radius: 20px; 
-      font-weight: 700; 
-      font-size: 13px; 
-      cursor: pointer; 
-      text-decoration: none; 
-      display: inline-block; 
-      transition: opacity 0.2s; 
-    }
-    .btn-main:active { opacity: 0.8; }
     
     .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #ffffff; }
     
     /* ПОИСК И КНОПКА ФИЛЬТРА */
-    .search-filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-filter-row { display: flex; gap: 8px; margin-bottom: 12px; }
     .search-input-wrapper { position: relative; flex: 1; }
     .search-input { width: 100%; background: #161616; border: 1px solid #262626; border-radius: 12px; padding: 10px 14px 10px 38px; color: #ffffff; font-size: 13px; outline: none; }
     .search-input::placeholder { color: #666; }
@@ -48,7 +29,7 @@
     .filter-trigger-btn { background: #161616; border: 1px solid #262626; border-radius: 12px; padding: 0 14px; display: flex; align-items: center; justify-content: center; gap: 6px; color: #ffffff; font-size: 13px; font-weight: 600; cursor: pointer; }
     .filter-trigger-btn.active { border-color: #ffffff; background: #222; }
 
-    /* ПАНЕЛЬ ФИЛЬТРОВ (СКРЫТА ПО УМОЛЧАНИЮ) */
+    /* ПАНЕЛЬ ФИЛЬТРОВ И СОРТИРОВКИ */
     .filter-panel { display: none; background: #141414; border: 1px solid #262626; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
     .filter-panel.open { display: block; }
     .filter-group { margin-bottom: 14px; }
@@ -263,13 +244,6 @@
 
   <!-- 1. ГЛАВНАЯ -->
   <div id="tab-home" class="tab-content active">
-    <div class="banner">
-      <h2>Вещи, которые имеют историю.</h2>
-      <p>Маркетплейс локальных ресейл и винтаж магазинов.</p>
-      <button type="button" onclick="scrollToCatalog()" class="btn-main">Перейти к каталогу &rarr;</button>
-    </div>
-
-    <div id="catalog-section" class="section-title">Каталог товаров</div>
 
     <!-- ПОИСК И КНОПКА ФИЛЬТРА -->
     <div class="search-filter-row">
@@ -288,19 +262,29 @@
       </button>
     </div>
 
-    <!-- ВЫПАДАЮЩАЯ ПАНЕЛЬ ФИЛЬТРОВ -->
+    <!-- ВЫПАДАЮЩАЯ ПАНЕЛЬ ФИЛЬТРОВ И СОРТИРОВКИ -->
     <div id="filter-panel" class="filter-panel">
+      <!-- СОРТИРОВКА -->
+      <div class="filter-group">
+        <label class="filter-label">Сортировка по цене</label>
+        <select id="filter-sort" class="filter-select" onchange="applyFilters()">
+          <option value="default">По умолчанию (Новые)</option>
+          <option value="price-asc">Сначала дешевле (по возрастанию)</option>
+          <option value="price-desc">Сначала дороже (по убыванию)</option>
+        </select>
+      </div>
+
       <!-- ФИЛЬТР ПО ПРОДАВЦУ / ШОПУ -->
       <div class="filter-group">
         <label class="filter-label">Магазин (Шоп)</label>
-        <select id="filter-shop" class="filter-select">
+        <select id="filter-shop" class="filter-select" onchange="applyFilters()">
           <option value="all">Все магазины</option>
         </select>
       </div>
 
       <!-- ФИЛЬТР ПО ЦЕНЕ -->
       <div class="filter-group">
-        <label class="filter-label">Цена (сум)</label>
+        <label class="filter-label">Диапазон цены (сум)</label>
         <div class="price-range">
           <input type="number" id="filter-price-min" class="price-input" placeholder="От" oninput="applyFilters()">
           <input type="number" id="filter-price-max" class="price-input" placeholder="До" oninput="applyFilters()">
@@ -492,8 +476,6 @@
         opt.innerText = shopName;
         shopSelect.appendChild(opt);
       });
-
-      shopSelect.addEventListener('change', applyFilters);
     }
 
     function toggleFilterPanel() {
@@ -503,14 +485,15 @@
       btn.classList.toggle('active');
     }
 
-    // Комплексная фильтрация: Поиск + Категория + Продавец + Цена
+    // Комплексная фильтрация + Сортировка по цене
     function applyFilters() {
       const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
       const selectedShop = document.getElementById('filter-shop').value;
       const minPrice = parseFloat(document.getElementById('filter-price-min').value) || 0;
       const maxPrice = parseFloat(document.getElementById('filter-price-max').value) || Infinity;
+      const sortType = document.getElementById('filter-sort').value;
 
-      const filtered = loadedProducts.filter(product => {
+      let filtered = loadedProducts.filter(product => {
         // 1. Поиск по тексту
         const titleMatch = (product.title || '').toLowerCase().includes(searchQuery);
         const descMatch = (product.description || '').toLowerCase().includes(searchQuery);
@@ -531,12 +514,20 @@
         return searchMatches && categoryMatches && shopMatches && priceMatches;
       });
 
+      // Логика сортировки по цене
+      if (sortType === 'price-asc') {
+        filtered.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+      } else if (sortType === 'price-desc') {
+        filtered.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+      }
+
       renderProducts(filtered);
     }
 
     function resetFilters() {
       document.getElementById('search-input').value = '';
       document.getElementById('filter-shop').value = 'all';
+      document.getElementById('filter-sort').value = 'default';
       document.getElementById('filter-price-min').value = '';
       document.getElementById('filter-price-max').value = '';
       selectedCategory = 'все';
@@ -780,10 +771,6 @@
       } else {
         window.open(targetUrl, '_blank');
       }
-    }
-
-    function scrollToCatalog() {
-      document.getElementById('catalog-section').scrollIntoView({ behavior: 'smooth' });
     }
 
     function openProduct(index) {
