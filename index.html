@@ -10,7 +10,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #0d0d0d !important; color: #ffffff !important; padding: 16px; padding-bottom: 90px; }
     
-    /* ШАПКА С ИКОНКОЙ КОРЗИНЫ */
+    /* ШАПКА */
     .header { text-align: center; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
     .logo span { color: #8c8c8c; }
@@ -66,7 +66,7 @@
       align-items: center; 
       justify-content: center; 
       cursor: pointer; 
-      z-index: 5;
+      z-index: 10;
       transition: transform 0.15s ease;
     }
     .card-fav-btn:active { transform: scale(0.85); }
@@ -84,7 +84,45 @@
     .profile-card { background: #161616; border: 1px solid #222222; border-radius: 16px; padding: 24px 20px; text-align: center; margin-top: 20px; }
     .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #262626; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #8c8c8c; }
 
-    /* НИЖНЕЕ МЕНЮ С КАСТОМНЫМИ ИКОНКАМИ */
+    /* СПИСОК ТОВАРОВ В КОРЗИНЕ */
+    .cart-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 120px; }
+    .cart-item { display: flex; align-items: center; background: #161616; border: 1px solid #222222; border-radius: 12px; padding: 10px; gap: 12px; position: relative; }
+    .cart-item-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-title { font-size: 14px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .cart-item-price { font-size: 14px; font-weight: 700; color: #ffffff; }
+    .cart-item-remove { background: none; border: none; color: #8c8c8c; font-size: 18px; padding: 4px 8px; cursor: pointer; }
+
+    /* НИЖНЯЯ ПАНЕЛЬ ПОКУПКИ В КОРЗИНЕ */
+    .cart-checkout-bar {
+      position: fixed;
+      bottom: 60px;
+      left: 0;
+      right: 0;
+      background: #161616;
+      border-top: 1px solid #262626;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 15;
+    }
+    .cart-total-label { font-size: 11px; color: #8c8c8c; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cart-total-price { font-size: 18px; font-weight: 800; color: #ffffff; margin-top: 2px; }
+    .btn-checkout {
+      background: #ffffff;
+      color: #0d0d0d;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-checkout:active { opacity: 0.8; }
+
+    /* НИЖНЕЕ МЕНЮ */
     .nav-bar { 
       position: fixed; 
       bottom: 0; 
@@ -95,7 +133,7 @@
       display: flex; 
       justify-content: space-around; 
       padding: 10px 0 8px 0; 
-      z-index: 10;
+      z-index: 20;
     }
     .nav-item { 
       color: #8c8c8c; 
@@ -141,11 +179,10 @@
 </head>
 <body>
 
-  <!-- ВЕРХНЯЯ ШАПКА ПРИЛОЖЕНИЯ -->
+  <!-- ШАПКА -->
   <div class="header">
     <div class="logo"><span>RE:</span>WEAR</div>
     <div class="cart-btn" onclick="switchTab('cart')">
-      <!-- SVG Иконка Корзины -->
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="21" r="1"></circle>
         <circle cx="20" cy="21" r="1"></circle>
@@ -155,7 +192,7 @@
     </div>
   </div>
 
-  <!-- 1. ЭКРАН ГЛАВНОЙ -->
+  <!-- 1. ГЛАВНАЯ -->
   <div id="tab-home" class="tab-content active">
     <div class="banner">
       <h2>Вещи, которые имеют историю.</h2>
@@ -176,21 +213,30 @@
     <div class="grid" id="catalog-grid" style="display: none;"></div>
   </div>
 
-  <!-- 2. ЭКРАН ИЗБРАННОГО -->
+  <!-- 2. ИЗБРАННОЕ -->
   <div id="tab-favorites" class="tab-content">
     <div class="section-title">Избранное</div>
     <div class="grid" id="favorites-grid"></div>
     <div id="fav-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">У вас пока нет сохранённых товаров.</div>
   </div>
 
-  <!-- 3. ЭКРАН КОРЗИНЫ -->
+  <!-- 3. КОРЗИНА -->
   <div id="tab-cart" class="tab-content">
     <div class="section-title">Корзина</div>
-    <div class="grid" id="cart-grid"></div>
+    <div class="cart-list" id="cart-list"></div>
     <div id="cart-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">Корзина пуста.</div>
+
+    <!-- ФИКСИРОВАННАЯ ПАНЕЛЬ С КНОПКОЙ «КУПИТЬ» -->
+    <div id="cart-checkout-bar" class="cart-checkout-bar" style="display: none;">
+      <div>
+        <div class="cart-total-label">Итого (<span id="cart-total-count">0</span>):</div>
+        <div class="cart-total-price" id="cart-total-sum">0 сум</div>
+      </div>
+      <button class="btn-checkout" onclick="checkoutCart()">Купить</button>
+    </div>
   </div>
 
-  <!-- 4. ЭКРАН ПРОФИЛЯ -->
+  <!-- 4. ПРОФИЛЬ -->
   <div id="tab-profile" class="tab-content">
     <div class="section-title">Мой профиль</div>
     <div class="profile-card">
@@ -205,7 +251,7 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
+  <!-- МОДАЛЬНОЕ ОКНО -->
   <div id="product-modal" class="modal">
     <button class="modal-close" onclick="closeProduct()">✕</button>
     <img id="m-img" class="modal-img" src="" alt="">
@@ -223,7 +269,7 @@
     </div>
   </div>
 
-  <!-- НИЖНЕЕ МЕНЮ С ВЕКТОРНЫМИ SVG-ИКОНКАМИ -->
+  <!-- НИЖНЕЕ МЕНЮ -->
   <div class="nav-bar">
     <div class="nav-item active" onclick="switchTab('home', this)">
       <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -315,13 +361,13 @@
           imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
         }
 
-        const isFav = favorites.includes(product.id);
+        const isFav = favorites.includes(String(product.id));
         const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
 
         const cardHtml = `
           <div class="card" onclick="openProduct(${originalIndex})">
             <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-              <svg viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#ffffff'}" stroke-width="2">
+              <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#ffffff'}" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
@@ -337,7 +383,6 @@
       });
     }
 
-    /* ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК */
     function switchTab(tabName, element) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -357,28 +402,34 @@
       if (tabName === 'cart') renderCart();
     }
 
-    /* ИЗБРАННОЕ И КОРЗИНА */
     function toggleFav(e, id) {
       if (e) {
         e.stopPropagation();
         e.preventDefault();
       }
 
-      if (favorites.includes(id)) {
-        favorites = favorites.filter(item => item !== id);
+      const strId = String(id);
+
+      if (favorites.includes(strId)) {
+        favorites = favorites.filter(item => item !== strId);
       } else {
-        favorites.push(id);
+        favorites.push(strId);
       }
 
-      // Перерисовываем список товаров и экран избранного
-      renderProducts(loadedProducts);
+      const svgIcon = document.getElementById('fav-icon-' + strId);
+      if (svgIcon) {
+        const isFav = favorites.includes(strId);
+        svgIcon.setAttribute('fill', isFav ? '#ff4d4d' : 'none');
+        svgIcon.setAttribute('stroke', isFav ? '#ff4d4d' : '#ffffff');
+      }
+
       renderFavorites();
     }
 
     function renderFavorites() {
       const grid = document.getElementById('favorites-grid');
       const empty = document.getElementById('fav-empty');
-      const favProducts = loadedProducts.filter(p => favorites.includes(p.id));
+      const favProducts = loadedProducts.filter(p => favorites.includes(String(p.id)));
 
       grid.innerHTML = '';
       if (favProducts.length === 0) {
@@ -391,7 +442,7 @@
           grid.innerHTML += `
             <div class="card" onclick="openProduct(${originalIndex})">
               <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-                <svg viewBox="0 0 24 24" fill="#ff4d4d" stroke="#ff4d4d" stroke-width="2">
+                <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="#ff4d4d" stroke="#ff4d4d" stroke-width="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
               </button>
@@ -409,13 +460,22 @@
     function toggleCartFromModal() {
       if (activeModalIndex === null) return;
       const p = loadedProducts[activeModalIndex];
-      if (cart.includes(p.id)) {
-        cart = cart.filter(id => id !== p.id);
+      const strId = String(p.id);
+
+      if (cart.includes(strId)) {
+        cart = cart.filter(id => id !== strId);
       } else {
-        cart.push(p.id);
+        cart.push(strId);
       }
       updateCartBadge();
       closeProduct();
+    }
+
+    function removeFromCart(id) {
+      const strId = String(id);
+      cart = cart.filter(itemId => itemId !== strId);
+      updateCartBadge();
+      renderCart();
     }
 
     function updateCartBadge() {
@@ -423,29 +483,57 @@
     }
 
     function renderCart() {
-      const grid = document.getElementById('cart-grid');
-      const empty = document.getElementById('cart-empty');
-      const cartProducts = loadedProducts.filter(p => cart.includes(p.id));
+      const listEl = document.getElementById('cart-list');
+      const emptyEl = document.getElementById('cart-empty');
+      const checkoutBar = document.getElementById('cart-checkout-bar');
+      const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
 
-      grid.innerHTML = '';
+      listEl.innerHTML = '';
       if (cartProducts.length === 0) {
-        empty.style.display = 'block';
+        emptyEl.style.display = 'block';
+        checkoutBar.style.display = 'none';
       } else {
-        empty.style.display = 'none';
+        emptyEl.style.display = 'none';
+        checkoutBar.style.display = 'flex';
+
+        let totalSum = 0;
+
         cartProducts.forEach(product => {
-          const originalIndex = loadedProducts.indexOf(product);
+          totalSum += Number(product.price || 0);
           let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
-          grid.innerHTML += `
-            <div class="card" onclick="openProduct(${originalIndex})">
-              <img class="card-img" src="${imageUrl}">
-              <div class="card-info">
-                <div class="card-title">${product.title}</div>
-                <div class="card-price">${Number(product.price).toLocaleString('ru-RU')} сум</div>
+          
+          listEl.innerHTML += `
+            <div class="cart-item">
+              <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
+              <div class="cart-item-info">
+                <div class="cart-item-title">${product.title || 'Без названия'}</div>
+                <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
               </div>
+              <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
             </div>
           `;
         });
+
+        document.getElementById('cart-total-count').innerText = cartProducts.length;
+        document.getElementById('cart-total-sum').innerText = totalSum.toLocaleString('ru-RU') + ' сум';
       }
+    }
+
+    function checkoutCart() {
+      const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
+      if (cartProducts.length === 0) return;
+
+      const sellerUsername = cartProducts[0].seller_username || 'твой_username';
+      let message = 'Здравствуйте! Я хочу купить следующие товары из RE:WEAR:%0A%0A';
+      
+      let total = 0;
+      cartProducts.forEach((p, idx) => {
+        message += `${idx + 1}. ${p.title} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум%0A`;
+        total += Number(p.price || 0);
+      });
+
+      message += `%0AИтого: ${total.toLocaleString('ru-RU')} сум`;
+      window.open(`https://t.me/${sellerUsername}?text=${message}`, '_blank');
     }
 
     function filterCategory(category, element) {
@@ -483,7 +571,7 @@
       document.getElementById('m-buy-btn').href = 'https://t.me/' + (p.seller_username || 'твой_username');
       
       const cartBtn = document.getElementById('m-cart-btn');
-      cartBtn.innerText = cart.includes(p.id) ? '✓ В корзине' : 'В корзину';
+      cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
 
       document.getElementById('product-modal').style.display = 'block';
       tg.BackButton.show();
