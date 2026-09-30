@@ -8,13 +8,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0d0d0d !important; color: #ffffff !important; padding: 16px; padding-bottom: 80px; }
+    body { background-color: #0d0d0d !important; color: #ffffff !important; padding: 16px; padding-bottom: 90px; }
     
     /* ШАПКА С ИКОНКОЙ КОРЗИНЫ */
     .header { text-align: center; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
     .logo span { color: #8c8c8c; }
-    .cart-btn { position: relative; background: #161616; border: 1px solid #262626; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+    .cart-btn { position: relative; background: #161616; border: 1px solid #262626; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 19px; cursor: pointer; }
     .cart-badge { position: absolute; top: -4px; right: -4px; background: #8c8c8c; color: #0d0d0d; font-size: 10px; font-weight: 800; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
     .banner { background: #161616; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #222222; text-align: left;}
@@ -58,14 +58,43 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ПРОФИЛЬ И СЕКЦИИ-ПУСТЫШКИ */
-    .profile-card { background: #161616; border: 1px solid #222222; border-radius: 16px; padding: 20px; text-align: center; margin-top: 20px; }
-    .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #262626; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    /* ПРОФИЛЬ */
+    .profile-card { background: #161616; border: 1px solid #222222; border-radius: 16px; padding: 24px 20px; text-align: center; margin-top: 20px; }
+    .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #262626; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; }
 
-    /* НИЖНЕЕ МЕНЮ */
-    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d0d; border-top: 1px solid #222; display: flex; justify-around; padding: 12px 0; z-index: 10;}
-    .nav-item { color: #8c8c8c; font-size: 11px; text-decoration: none; text-align: center; cursor: pointer; flex: 1; }
-    .nav-item.active { color: #ffffff; font-weight: 600; }
+    /* УВЕЛИЧЕННОЕ НИЖНЕЕ МЕНЮ С ИКОНКАМИ */
+    .nav-bar { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: #111111; 
+      border-top: 1px solid #222222; 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0; 
+      z-index: 10;
+    }
+    .nav-item { 
+      color: #8c8c8c; 
+      font-size: 11px; 
+      font-weight: 500;
+      text-decoration: none; 
+      text-align: center; 
+      cursor: pointer; 
+      flex: 1; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 0;
+      transition: color 0.2s, transform 0.1s;
+    }
+    .nav-item:active { transform: scale(0.95); }
+    .nav-item .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-item.active { color: #ffffff; font-weight: 700; }
+    .nav-item.active .nav-icon { transform: scale(1.1); }
+
     #loading { text-align: center; color: #8c8c8c; padding: 20px; font-size: 13px; }
 
     /* МОДАЛЬНОЕ ОКНО */
@@ -157,11 +186,20 @@
     </div>
   </div>
 
-  <!-- НИЖНЕЕ МЕНЮ (НАВИГАЦИЯ) -->
+  <!-- УВЕЛИЧЕННОЕ НИЖНЕЕ МЕНЮ С ИКОНКАМИ -->
   <div class="nav-bar">
-    <div class="nav-item active" onclick="switchTab('home', this)">Главная</div>
-    <div class="nav-item" onclick="switchTab('favorites', this)">Избранное</div>
-    <div class="nav-item" onclick="switchTab('profile', this)">Профиль</div>
+    <div class="nav-item active" onclick="switchTab('home', this)">
+      <span class="nav-icon">🏠</span>
+      <span>Главная</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('favorites', this)">
+      <span class="nav-icon">❤️</span>
+      <span>Избранное</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile', this)">
+      <span class="nav-icon">👤</span>
+      <span>Профиль</span>
+    </div>
   </div>
 
   <script>
@@ -260,6 +298,12 @@
 
       if (element) {
         element.classList.add('active');
+      } else {
+        // Если перешли не кликом по нижнему меню (например, кликнув по корзине)
+        const items = document.querySelectorAll('.nav-item');
+        if (tabName === 'home' && items[0]) items[0].classList.add('active');
+        if (tabName === 'favorites' && items[1]) items[1].classList.add('active');
+        if (tabName === 'profile' && items[2]) items[2].classList.add('active');
       }
 
       if (tabName === 'favorites') renderFavorites();
