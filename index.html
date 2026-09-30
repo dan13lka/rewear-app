@@ -14,8 +14,8 @@
     .header { text-align: center; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
     .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
     .logo span { color: #8c8c8c; }
-    .cart-btn { position: relative; background: #161616; border: 1px solid #262626; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 19px; cursor: pointer; }
-    .cart-badge { position: absolute; top: -4px; right: -4px; background: #8c8c8c; color: #0d0d0d; font-size: 10px; font-weight: 800; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .cart-btn { position: relative; background: #161616; border: 1px solid #262626; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .cart-badge { position: absolute; top: -4px; right: -4px; background: #ffffff; color: #0d0d0d; font-size: 10px; font-weight: 800; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
     .banner { background: #161616; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #222222; text-align: left;}
     .banner h2 { font-size: 20px; margin-bottom: 8px; font-weight: 700; color: #ffffff; }
@@ -51,8 +51,30 @@
     .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ffffff; }
     .card-price { font-size: 14px; font-weight: 700; color: #ffffff; }
     .card-meta { font-size: 11px; color: #8c8c8c; margin-top: 4px; }
-    .card-fav-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); border: none; border-radius: 50%; width: 30px; height: 30px; color: #fff; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .card-fav-btn.active { color: #ff4d4d; }
+    
+    /* ИКОНКА ИЗБРАННОГО НА КАРТОЧКЕ */
+    .card-fav-btn { 
+      position: absolute; 
+      top: 8px; 
+      right: 8px; 
+      background: rgba(0,0,0,0.6); 
+      border: none; 
+      border-radius: 50%; 
+      width: 32px; 
+      height: 32px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      z-index: 5;
+      transition: transform 0.15s ease;
+    }
+    .card-fav-btn:active { transform: scale(0.85); }
+    .card-fav-btn svg { 
+      pointer-events: none; 
+      width: 16px; 
+      height: 16px; 
+    }
 
     /* ЭКРАНЫ СЕКЦИЙ */
     .tab-content { display: none; }
@@ -60,9 +82,9 @@
 
     /* ПРОФИЛЬ */
     .profile-card { background: #161616; border: 1px solid #222222; border-radius: 16px; padding: 24px 20px; text-align: center; margin-top: 20px; }
-    .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #262626; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+    .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #262626; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #8c8c8c; }
 
-    /* УВЕЛИЧЕННОЕ НИЖНЕЕ МЕНЮ С ИКОНКАМИ */
+    /* НИЖНЕЕ МЕНЮ С КАСТОМНЫМИ ИКОНКАМИ */
     .nav-bar { 
       position: fixed; 
       bottom: 0; 
@@ -72,7 +94,7 @@
       border-top: 1px solid #222222; 
       display: flex; 
       justify-content: space-around; 
-      padding: 8px 0; 
+      padding: 10px 0 8px 0; 
       z-index: 10;
     }
     .nav-item { 
@@ -86,14 +108,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
-      padding: 4px 0;
-      transition: color 0.2s, transform 0.1s;
+      gap: 4px;
+      transition: color 0.2s;
+    }
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      stroke: #8c8c8c;
+      fill: none;
+      transition: stroke 0.2s, transform 0.1s;
     }
     .nav-item:active { transform: scale(0.95); }
-    .nav-item .nav-icon { font-size: 20px; line-height: 1; }
     .nav-item.active { color: #ffffff; font-weight: 700; }
-    .nav-item.active .nav-icon { transform: scale(1.1); }
+    .nav-item.active svg { stroke: #ffffff; transform: scale(1.08); }
 
     #loading { text-align: center; color: #8c8c8c; padding: 20px; font-size: 13px; }
 
@@ -118,7 +145,12 @@
   <div class="header">
     <div class="logo"><span>RE:</span>WEAR</div>
     <div class="cart-btn" onclick="switchTab('cart')">
-      🛒
+      <!-- SVG Иконка Корзины -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="21" r="1"></circle>
+        <circle cx="20" cy="21" r="1"></circle>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      </svg>
       <div id="cart-count" class="cart-badge">0</div>
     </div>
   </div>
@@ -162,7 +194,12 @@
   <div id="tab-profile" class="tab-content">
     <div class="section-title">Мой профиль</div>
     <div class="profile-card">
-      <div class="profile-avatar">👤</div>
+      <div class="profile-avatar">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
       <h3 id="user-name" style="margin-bottom: 4px;">Пользователь</h3>
       <p id="user-handle" style="color: #8c8c8c; font-size: 13px;">@username</p>
     </div>
@@ -182,22 +219,32 @@
     
     <div class="modal-actions">
       <a id="m-buy-btn" href="#" target="_blank" class="btn-buy">Написать продавцу</a>
-      <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">🛒</button>
+      <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">В корзину</button>
     </div>
   </div>
 
-  <!-- УВЕЛИЧЕННОЕ НИЖНЕЕ МЕНЮ С ИКОНКАМИ -->
+  <!-- НИЖНЕЕ МЕНЮ С ВЕКТОРНЫМИ SVG-ИКОНКАМИ -->
   <div class="nav-bar">
     <div class="nav-item active" onclick="switchTab('home', this)">
-      <span class="nav-icon">🏠</span>
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
       <span>Главная</span>
     </div>
+    
     <div class="nav-item" onclick="switchTab('favorites', this)">
-      <span class="nav-icon">❤️</span>
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
       <span>Избранное</span>
     </div>
+    
     <div class="nav-item" onclick="switchTab('profile', this)">
-      <span class="nav-icon">👤</span>
+      <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
       <span>Профиль</span>
     </div>
   </div>
@@ -215,7 +262,6 @@
     let activeModalIndex = null;
 
     async function initAndLoad() {
-      // Telegram Profile info
       if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         const user = tg.initDataUnsafe.user;
         document.getElementById('user-name').innerText = (user.first_name || '') + ' ' + (user.last_name || '');
@@ -274,8 +320,10 @@
 
         const cardHtml = `
           <div class="card" onclick="openProduct(${originalIndex})">
-            <button class="card-fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${product.id}')">
-              ${isFav ? '♥' : '♡'}
+            <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
+              <svg viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#ffffff'}" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
             </button>
             <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
             <div class="card-info">
@@ -299,7 +347,6 @@
       if (element) {
         element.classList.add('active');
       } else {
-        // Если перешли не кликом по нижнему меню (например, кликнув по корзине)
         const items = document.querySelectorAll('.nav-item');
         if (tabName === 'home' && items[0]) items[0].classList.add('active');
         if (tabName === 'favorites' && items[1]) items[1].classList.add('active');
@@ -312,12 +359,18 @@
 
     /* ИЗБРАННОЕ И КОРЗИНА */
     function toggleFav(e, id) {
-      if (e) e.stopPropagation();
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+
       if (favorites.includes(id)) {
         favorites = favorites.filter(item => item !== id);
       } else {
         favorites.push(id);
       }
+
+      // Перерисовываем список товаров и экран избранного
       renderProducts(loadedProducts);
       renderFavorites();
     }
@@ -337,6 +390,11 @@
           let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
           grid.innerHTML += `
             <div class="card" onclick="openProduct(${originalIndex})">
+              <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
+                <svg viewBox="0 0 24 24" fill="#ff4d4d" stroke="#ff4d4d" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </button>
               <img class="card-img" src="${imageUrl}">
               <div class="card-info">
                 <div class="card-title">${product.title}</div>
@@ -425,7 +483,7 @@
       document.getElementById('m-buy-btn').href = 'https://t.me/' + (p.seller_username || 'твой_username');
       
       const cartBtn = document.getElementById('m-cart-btn');
-      cartBtn.innerText = cart.includes(p.id) ? '✓ В корзине' : '🛒 В корзину';
+      cartBtn.innerText = cart.includes(p.id) ? '✓ В корзине' : 'В корзину';
 
       document.getElementById('product-modal').style.display = 'block';
       tg.BackButton.show();
