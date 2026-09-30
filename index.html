@@ -85,12 +85,13 @@
   <div id="main-view">
     <div class="header">
       <div class="logo"><span>RE:</span>WEAR</div>
+      <div class="slogan">ВИНТАЖ / Б/У / ОРИГИНАЛ</div>
     </div>
 
     <div class="banner">
       <h2>Вещи, которые имеют историю.</h2>
       <p>Лучшие вещи не стареют. Они просто ждут своего человека.</p>
-      <a href="#catalog-section" class="btn-main">Перейти к каталогу &rarr;</a>
+      <a href="javascript:void(0)" onclick="scrollToCatalog()" class="btn-main">Перейти к каталогу &rarr;</a>
     </div>
 
     <div id="catalog-section" class="section-title">Популярные товары</div>
@@ -175,6 +176,13 @@
         console.error(err);
         loadingEl.style.color = "#ff4d4d";
         loadingEl.innerText = "Ошибка загрузки: " + err.message;
+      }
+    }
+
+    function scrollToCatalog() {
+      const target = document.getElementById('catalog-section');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
