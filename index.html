@@ -712,6 +712,114 @@
 .contact-btn-arrow {
   flex-shrink: 0;
 }    
+ /* МОИ ЗАКАЗЫ */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.order-card {
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.order-card-header {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #222;
+}
+
+.order-card-id {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.order-card-date {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.order-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-item-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #222;
+  flex-shrink: 0;
+}
+
+.order-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.order-item-meta {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #222;
+}
+
+.order-total-label {
+  font-size: 12px;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.order-total-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.btn-go-catalog {
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-go-catalog:active { opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -838,6 +946,14 @@
     </svg>
     <span>Отзывы</span>
   </button>
+  <button class="btn-open-reviews" onclick="openOrdersScreen()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <path d="M16 10a4 4 0 0 1-8 0"></path>
+  </svg>
+  <span>Мои заказы</span>
+</button>
   <!-- СВЯЗАТЬСЯ С НАМИ -->
 <div class="contact-section-title">Связаться с нами</div>
 <div class="contact-buttons">
@@ -938,7 +1054,28 @@
     Пока нет отзывов. Будьте первым — оставьте свой!
   </div>
 </div>
+<!-- ЭКРАН МОИХ ЗАКАЗОВ -->
+<div id="orders-screen" class="reviews-screen">
+  <div class="reviews-topbar">
+    <button class="reviews-back-btn" onclick="closeOrdersScreen()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <div class="reviews-topbar-title">Мои заказы</div>
+    <div style="width: 22px;"></div>
+  </div>
 
+  <div class="orders-list" id="orders-list"></div>
+
+  <div id="orders-empty" style="text-align: center; color: #8c8c8c; padding: 60px 20px; font-size: 13px; display: none;">
+    <div style="margin-bottom: 20px;">У вас пока нет заказов</div>
+    <button class="btn-go-catalog" onclick="closeOrdersScreen(); switchTab('home');">
+      Перейти в каталог
+    </button>
+  </div>
+</div>
 <!-- ПАНЕЛЬ ВВОДА ОТЗЫВА (снизу) -->
 <div id="review-input-bar" class="review-input-bar">
   <button class="review-input-btn" onclick="openReviewComposer()">
@@ -1810,6 +1947,129 @@ function contactViaInstagram() {
       tg.showAlert('Открываем Instagram. Текст вопроса скопирован — просто вставьте его в сообщение.');
     }
   }, 300);
+}
+    // === МОИ ЗАКАЗЫ ===
+function openOrdersScreen() {
+  document.getElementById('orders-screen').classList.add('active');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeOrdersScreen);
+  loadMyOrders();
+}
+
+function closeOrdersScreen() {
+  document.getElementById('orders-screen').classList.remove('active');
+  tg.BackButton.hide();
+}
+
+async function loadMyOrders() {
+  const listEl = document.getElementById('orders-list');
+  const emptyEl = document.getElementById('orders-empty');
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const userId = user.id;
+
+  listEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+
+  if (!userId) {
+    emptyEl.style.display = 'block';
+    emptyEl.querySelector('div').innerText = 'Не удалось определить пользователя.';
+    emptyEl.querySelector('button').style.display = 'none';
+    return;
+  }
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: orders, error } = await client
+      .from('orders')
+      .select('*')
+      .eq('buyer_tg_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!orders || orders.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    // Собираем id всех товаров из заказов чтобы подтянуть фото
+    const allIds = new Set();
+    orders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          if (item.id) allIds.add(item.id);
+        });
+      }
+    });
+
+    let productsMap = {};
+    if (allIds.size > 0) {
+      const { data: prods } = await client
+        .from('products')
+        .select('id, image_urls')
+        .in('id', Array.from(allIds));
+
+      if (prods) {
+        prods.forEach(p => { productsMap[p.id] = p; });
+      }
+    }
+
+    orders.forEach(order => {
+      const date = new Date(order.created_at);
+      const dateStr = date.toLocaleDateString('ru-RU', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      });
+
+      const items = Array.isArray(order.items) ? order.items : [];
+
+      let itemsHtml = '';
+      items.forEach(item => {
+        let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=200';
+        const prod = productsMap[item.id];
+        if (prod && prod.image_urls) {
+          const arr = Array.isArray(prod.image_urls) ? prod.image_urls : [prod.image_urls];
+          if (arr[0]) {
+            imgUrl = String(arr[0]).replace(/[\{\}\"\']/g, '').trim();
+          }
+        }
+
+        const sizeStr = item.size ? `Размер: ${escapeHtml(item.size)}` : 'Размер не указан';
+
+        itemsHtml += `
+          <div class="order-item-row">
+            <img class="order-item-img" src="${imgUrl}" alt="">
+            <div class="order-item-info">
+              <div class="order-item-title">${escapeHtml(item.title || 'Товар')}</div>
+              <div class="order-item-meta">${sizeStr}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      listEl.innerHTML += `
+        <div class="order-card">
+          <div class="order-card-header">
+            <div class="order-card-id">Заказ #${order.id}</div>
+            <div class="order-card-date">${dateStr}</div>
+          </div>
+          <div class="order-items-list">
+            ${itemsHtml}
+          </div>
+          <div class="order-total-row">
+            <div class="order-total-label">Итого</div>
+            <div class="order-total-value">${Number(order.total_sum || 0).toLocaleString('ru-RU')} сум</div>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки заказов:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.querySelector('div').innerText = 'Не удалось загрузить заказы.';
+    emptyEl.querySelector('button').style.display = 'none';
+  }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
