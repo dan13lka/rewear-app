@@ -1058,6 +1058,53 @@ function goToSlide(index) {
   if (track) track.scrollLeft = 0;
 }
 
+  // === ВЫБОР РАЗМЕРА ===
+let selectedSize = null;
+
+function renderSizeOptions(sizes) {
+  const section = document.getElementById('m-size-section');
+  const optionsEl = document.getElementById('m-size-options');
+
+  let cleanSizes = [];
+  if (Array.isArray(sizes)) {
+    cleanSizes = sizes.map(s => String(s).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+  } else if (typeof sizes === 'string' && sizes.trim()) {
+    cleanSizes = sizes.replace(/[\{\}\"\']/g, '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  selectedSize = null;
+
+  if (cleanSizes.length === 0) {
+    section.style.display = 'none';
+    optionsEl.innerHTML = '';
+    return;
+  }
+
+  if (cleanSizes.length === 1) {
+    selectedSize = cleanSizes[0];
+    section.style.display = 'none';
+    optionsEl.innerHTML = '';
+    return;
+  }
+
+  section.style.display = 'block';
+  optionsEl.innerHTML = '';
+  cleanSizes.forEach(size => {
+    const chip = document.createElement('div');
+    chip.className = 'size-chip';
+    chip.innerText = size;
+    chip.onclick = () => selectSize(size, chip);
+    optionsEl.appendChild(chip);
+  });
+}
+
+function selectSize(size, chipEl) {
+  selectedSize = size;
+  document.querySelectorAll('#m-size-options .size-chip').forEach(chip => {
+    chip.classList.remove('selected');
+  });
+  if (chipEl) chipEl.classList.add('selected');
+}
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
