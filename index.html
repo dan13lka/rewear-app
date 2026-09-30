@@ -384,7 +384,6 @@
     <div id="m-price" class="modal-price"></div>
     <div class="modal-tags">
       <span id="m-category" class="tag"></span>
-      <span id="m-condition" class="tag"></span>
       <span id="m-size" class="tag"></span>
     </div>
     <div id="m-desc" class="modal-desc"></div>
@@ -800,7 +799,6 @@
       document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
       
       document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
-      document.getElementById('m-condition').innerText = 'Состояние: ' + (p.condition || '—');
       document.getElementById('m-size').innerText = 'Размер: ' + (p.size || 'M');
       
       document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
