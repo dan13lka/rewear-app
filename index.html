@@ -752,18 +752,21 @@
 
       document.getElementById('tab-' + tabName).classList.add('active');
 
-      if (element) {
-        element.classList.add('active');
-       } else {
+    if (element) {
+    element.classList.add('active');
+  } else {
     const items = document.querySelectorAll('.nav-item');
     // Теперь порядок: [0] home, [1] cart, [2] profile
     if (tabName === 'home' && items[0]) items[0].classList.add('active');
     if (tabName === 'cart' && items[1]) items[1].classList.add('active');
     if (tabName === 'profile' && items[2]) items[2].classList.add('active');
-   
   }
 
-    function toggleFav(e, id) {
+  if (tabName === 'favorites') renderFavorites();
+  if (tabName === 'cart') renderCart();
+}
+
+function toggleFav(e, id) {
       if (e) {
         e.stopPropagation();
         e.preventDefault();
