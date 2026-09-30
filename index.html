@@ -1107,22 +1107,28 @@ function renderSizeOptions(sizes) {
   }
 
   selectedSize = null;
+  optionsEl.innerHTML = '';
 
+  // Нет размеров — прячем блок вообще
   if (cleanSizes.length === 0) {
     section.style.display = 'none';
-    optionsEl.innerHTML = '';
     return;
   }
 
+  // Есть размеры — всегда показываем блок
+  section.style.display = 'block';
+
+  // Один размер — показываем "заблокированную" кнопку и сразу выбираем
   if (cleanSizes.length === 1) {
     selectedSize = cleanSizes[0];
-    section.style.display = 'none';
-    optionsEl.innerHTML = '';
+    const chip = document.createElement('div');
+    chip.className = 'size-chip selected single';
+    chip.innerText = cleanSizes[0];
+    optionsEl.appendChild(chip);
     return;
   }
 
-  section.style.display = 'block';
-  optionsEl.innerHTML = '';
+  // Несколько размеров — обычные кликабельные кнопки
   cleanSizes.forEach(size => {
     const chip = document.createElement('div');
     chip.className = 'size-chip';
