@@ -444,7 +444,11 @@
       </svg>
     </button>
 
-    <img id="m-img" class="modal-img" src="" alt="">
+    <div class="modal-gallery">
+  <div class="gallery-track" id="m-gallery-track"></div>
+  <div class="gallery-counter" id="m-gallery-counter"></div>
+  <div class="gallery-dots" id="m-gallery-dots"></div>
+</div>
     <div id="m-shop" class="modal-shop"></div>
     <div id="m-title" class="modal-title"></div>
     <div id="m-price" class="modal-price"></div>
@@ -914,42 +918,114 @@
   }
 }
 
-    function openProduct(index) {
-      activeModalIndex = index;
-      const p = loadedProducts[index];
-      if (!p) return;
+   function openProduct(index) {
+  activeModalIndex = index;
+  const p = loadedProducts[index];
+  if (!p) return;
 
-      let imageUrl = p.image_urls ? (Array.isArray(p.image_urls) ? p.image_urls[0] : p.image_urls).replace(/[\{\}\"\']/g, '') : '';
-
-      document.getElementById('m-img').src = imageUrl;
-      document.getElementById('m-shop').innerText = p.shop || 'RE:WEAR Select';
-      document.getElementById('m-title').innerText = p.title || 'Без названия';
-      document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
-      
-      document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
-      document.getElementById('m-size').innerText = 'Размер: ' + (p.size || 'M');
-      
-      document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
-      
-      const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
-      const directMsg = encodeURIComponent(`Здравствуйте! Меня интересует: ${p.title}${shopMention} (${Number(p.price || 0).toLocaleString('ru-RU')} сум)`);
-      document.getElementById('m-buy-btn').href = `https://t.me/${ADMIN_USERNAME}?text=${directMsg}`;
-      
-      const cartBtn = document.getElementById('m-cart-btn');
-      cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
-
-      updateModalFavIcon(p.id);
-
-      document.getElementById('product-modal').style.display = 'block';
-      tg.BackButton.show();
-      tg.BackButton.onClick(closeProduct);
+  // Собираем массив фото
+  let images = [];
+  if (p.image_urls) {
+    if (Array.isArray(p.image_urls)) {
+      images = p.image_urls.map(u => String(u).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+    } else {
+      const cleaned = String(p.image_urls).replace(/[\{\}\"\']/g, '').trim();
+      images = cleaned ? [cleaned] : [];
     }
+  }
+  if (images.length === 0) {
+    images = ['https://images.unsplash.com/photo-1544441893-675973e31985?w=500'];
+  }
+
+  renderGallery(images);
+
+  document.getElementById('m-shop').innerText = p.shop || 'RE:WEAR Select';
+  document.getElementById('m-title').innerText = p.title || 'Без названия';
+  document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
+  
+  document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
+  document.getElementById('m-size').innerText = 'Размер: ' + (p.size || 'M');
+  
+  document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
+  
+  const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
+  const directMsg = encodeURIComponent(`Здравствуйте! Меня интересует: ${p.title}${shopMention} (${Number(p.price || 0).toLocaleString('ru-RU')} сум)`);
+  document.getElementById('m-buy-btn').href = `https://t.me/${ADMIN_USERNAME}?text=${directMsg}`;
+  
+  const cartBtn = document.getElementById('m-cart-btn');
+  cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
+
+  updateModalFavIcon(p.id);
+
+  document.getElementById('product-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeProduct);
+}
+
+// Отрисовка галереи
+function renderGallery(images) {
+  const track = document.getElementById('m-gallery-track');
+  const dotsEl = document.getElementById('m-gallery-dots');
+  const counterEl = document.getElementById('m-gallery-counter');
+
+  track.innerHTML = '';
+  dotsEl.innerHTML = '';
+
+  images.forEach((url, i) => {
+    track.innerHTML += `
+      <div class="gallery-slide">
+        <img src="${url}" alt="Фото ${i + 1}" onerror="this.src='https://images.unsplash.com/photo-1544441893-675973e31985?w=500'">
+      </div>
+    `;
+    dotsEl.innerHTML += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></div>`;
+  });
+
+  // Счётчик и точки показываем только если фото больше 1
+  if (images.length > 1) {
+    counterEl.style.display = 'block';
+    dotsEl.style.display = 'flex';
+    counterEl.innerText = `1 / ${images.length}`;
+  } else {
+    counterEl.style.display = 'none';
+    dotsEl.style.display = 'none';
+  }
+
+  // Обновляем активную точку и счётчик при скролле
+  let scrollTimeout;
+  track.onscroll = () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const slideWidth = track.clientWidth;
+      const currentIndex = Math.round(track.scrollLeft / slideWidth);
+      updateGalleryUI(currentIndex, images.length);
+    }, 50);
+  };
+}
+
+function updateGalleryUI(index, total) {
+  document.querySelectorAll('.gallery-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+  });
+  const counterEl = document.getElementById('m-gallery-counter');
+  if (total > 1) {
+    counterEl.innerText = `${index + 1} / ${total}`;
+  }
+}
+
+function goToSlide(index) {
+  const track = document.getElementById('m-gallery-track');
+  const slideWidth = track.clientWidth;
+  track.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
+}
 
     function closeProduct() {
-      document.getElementById('product-modal').style.display = 'none';
-      tg.BackButton.hide();
-      activeModalIndex = null;
-    }
+  document.getElementById('product-modal').style.display = 'none';
+  tg.BackButton.hide();
+  activeModalIndex = null;
+  // Сброс галереи при закрытии
+  const track = document.getElementById('m-gallery-track');
+  if (track) track.scrollLeft = 0;
+}
 
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
