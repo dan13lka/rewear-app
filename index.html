@@ -127,7 +127,12 @@
       transition: opacity 0.2s;
     }
     .btn-checkout:active { opacity: 0.8; }
-
+    
+/* Стили для интерактивного выбора размера */
+.size-selector-wrapper { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.size-btn { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 14px; border-radius: 8px; font-size: 12px; color: #a0a0a0; cursor: pointer; transition: all 0.2s; }
+.size-btn.active { background: #ffffff; color: #0d0d0d; border-color: #ffffff; font-weight: 700; }
+  
     /* НИЖНЕЕ МЕНЮ */
     .nav-bar { 
       position: fixed; 
@@ -368,7 +373,10 @@
     <div id="m-price" class="modal-price"></div>
     <div class="modal-tags">
       <span id="m-category" class="tag"></span>
-      <span id="m-size" class="tag"></span>
+      <!-- Вместо старого тега размера теперь интерактивный выбор -->
+      <div style="width: 100%; margin-top: 4px;">
+        <span style="font-size: 11px; color: #8c8c8c; display: block; margin-bottom: 6px; text-transform: uppercase;">Выберите размер:</span>
+        <div id="m-sizes-container" class="size-selector-wrapper"></div>
     </div>
     <div id="m-desc" class="modal-desc"></div>
     
