@@ -19,21 +19,21 @@
     .banner h2 { font-size: 20px; margin-bottom: 8px; font-weight: 700; color: #ffffff; }
     .banner p { font-size: 13px; color: #a0a0a0; margin-bottom: 16px; }
     
-    /* СЕРЫЕ КНОПКИ С ПРИНУДИТЕЛЬНЫМ СТИЛЕМ (!important) */
+    /* КНОПКА В ЦВЕТЕ RE: (#8c8c8c) */
     .btn-main, a.btn-main { 
-      background-color: #262626 !important; 
-      color: #ffffff !important; 
-      border: 1px solid #3d3d3d !important; 
+      background-color: #8c8c8c !important; 
+      color: #0d0d0d !important; 
+      border: none !important; 
       padding: 10px 20px; 
       border-radius: 20px; 
-      font-weight: 600; 
+      font-weight: 700; 
       font-size: 13px; 
       cursor: pointer; 
       text-decoration: none; 
       display: inline-block; 
-      transition: background-color 0.2s; 
+      transition: opacity 0.2s; 
     }
-    .btn-main:active { background-color: #383838 !important; }
+    .btn-main:active { opacity: 0.8; }
     
     .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #ffffff; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
@@ -59,15 +59,15 @@
     .tag { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #a0a0a0; }
     .modal-desc { font-size: 14px; color: #cccccc; line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
     
-    /* СЕРАЯ КНОПКА СВЯЗИ С ПРОДАВЦОМ */
+    /* КНОПКА СВЯЗИ В ЦВЕТЕ RE: (#8c8c8c) */
     .btn-buy, a.btn-buy { 
       position: fixed; 
       bottom: 20px; 
       left: 16px; 
       right: 16px; 
-      background-color: #262626 !important; 
-      color: #ffffff !important; 
-      border: 1px solid #3d3d3d !important; 
+      background-color: #8c8c8c !important; 
+      color: #0d0d0d !important; 
+      border: none !important; 
       text-align: center; 
       padding: 16px; 
       border-radius: 14px; 
@@ -75,9 +75,9 @@
       font-size: 15px; 
       text-decoration: none; 
       z-index: 102; 
-      transition: background-color 0.2s; 
+      transition: opacity 0.2s; 
     }
-    .btn-buy:active { background-color: #383838 !important; }
+    .btn-buy:active { opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -85,7 +85,6 @@
   <div id="main-view">
     <div class="header">
       <div class="logo"><span>RE:</span>WEAR</div>
-      <div class="slogan">ВИНТАЖ / Б/У / ОРИГИНАЛ</div>
     </div>
 
     <div class="banner">
