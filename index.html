@@ -20,7 +20,7 @@
     .banner p { font-size: 13px; color: #a0a0a0; margin-bottom: 16px; }
     
     /* КНОПКА В ЦВЕТЕ RE: (#8c8c8c) */
-    .btn-main, a.btn-main { 
+    .btn-main, button.btn-main { 
       background-color: #8c8c8c !important; 
       color: #0d0d0d !important; 
       border: none !important; 
@@ -36,6 +36,28 @@
     .btn-main:active { opacity: 0.8; }
     
     .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #ffffff; }
+    
+    /* ФИЛЬТРЫ И КАТЕГОРИИ */
+    .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 16px; scrollbar-width: none; }
+    .categories-bar::-webkit-scrollbar { display: none; }
+    .cat-chip { 
+      background: #161616; 
+      color: #8c8c8c; 
+      border: 1px solid #262626; 
+      padding: 8px 16px; 
+      border-radius: 20px; 
+      font-size: 13px; 
+      font-weight: 600; 
+      white-space: nowrap; 
+      cursor: pointer; 
+      transition: all 0.2s; 
+    }
+    .cat-chip.active { 
+      background: #ffffff; 
+      color: #0d0d0d; 
+      border-color: #ffffff; 
+    }
+
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
     .card { background: #161616; border-radius: 12px; overflow: hidden; border: 1px solid #222222; text-decoration: none; color: inherit; display: block; cursor: pointer;}
     .card-img { width: 100%; height: 160px; object-fit: cover; background: #222; display: block; }
@@ -91,10 +113,18 @@
     <div class="banner">
       <h2>Вещи, которые имеют историю.</h2>
       <p>Лучшие вещи не стареют. Они просто ждут своего человека.</p>
-      <a href="javascript:void(0)" onclick="scrollToCatalog()" class="btn-main">Перейти к каталогу &rarr;</a>
+      <button type="button" onclick="openCategories()" class="btn-main">Перейти к каталогу &rarr;</button>
     </div>
 
-    <div id="catalog-section" class="section-title">Популярные товары</div>
+    <div id="catalog-section" class="section-title">Каталог товаров</div>
+
+    <!-- КАТЕГОРИИ (ВЕТРОВКИ, ХУДИ, ФУТБОЛКИ) -->
+    <div class="categories-bar">
+      <button class="cat-chip active" onclick="filterCategory('все', this)">Все</button>
+      <button class="cat-chip" onclick="filterCategory('ветровки', this)">Ветровки</button>
+      <button class="cat-chip" onclick="filterCategory('худи', this)">Худи</button>
+      <button class="cat-chip" onclick="filterCategory('футболки', this)">Футболки</button>
+    </div>
 
     <div id="loading">Загрузка товаров...</div>
     <div class="grid" id="catalog-grid" style="display: none;"></div>
@@ -115,8 +145,8 @@
   </div>
 
   <div class="nav-bar">
-    <div class="nav-item active">Главная</div>
-    <div class="nav-item">Каталог</div>
+    <div class="nav-item active" onclick="filterCategory('все')">Главная</div>
+    <div class="nav-item" onclick="openCategories()">Каталог</div>
     <div class="nav-item">Избранное</div>
     <div class="nav-item">Профиль</div>
   </div>
@@ -129,10 +159,10 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
 
     let loadedProducts = [];
+    let currentCategory = 'все';
 
     async function initAndLoad() {
       const loadingEl = document.getElementById('loading');
-      const gridEl = document.getElementById('catalog-grid');
 
       try {
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -146,31 +176,7 @@
         }
 
         loadedProducts = products;
-        gridEl.innerHTML = '';
-        loadingEl.style.display = 'none';
-        gridEl.style.display = 'grid';
-
-        products.forEach((product, index) => {
-          let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
-          if (product.image_urls) {
-            imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
-            imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
-          }
-
-          const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
-
-          const cardHtml = `
-            <div class="card" onclick="openProduct(${index})">
-              <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
-              <div class="card-info">
-                <div class="card-title">${product.title || 'Без названия'}</div>
-                <div class="card-price">${priceVal} сум</div>
-                <div class="card-meta">${product.category || 'Ветровки'} • ${product.condition || '8/10'}</div>
-              </div>
-            </div>
-          `;
-          gridEl.innerHTML += cardHtml;
-        });
+        renderProducts(loadedProducts);
 
       } catch (err) {
         console.error(err);
@@ -179,7 +185,74 @@
       }
     }
 
-    function scrollToCatalog() {
+    function renderProducts(products) {
+      const loadingEl = document.getElementById('loading');
+      const gridEl = document.getElementById('catalog-grid');
+
+      gridEl.innerHTML = '';
+
+      if (products.length === 0) {
+        loadingEl.style.display = 'block';
+        loadingEl.innerText = "В этой категории нет товаров.";
+        gridEl.style.display = 'none';
+        return;
+      }
+
+      loadingEl.style.display = 'none';
+      gridEl.style.display = 'grid';
+
+      products.forEach((product) => {
+        const originalIndex = loadedProducts.indexOf(product);
+        let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
+        if (product.image_urls) {
+          imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
+          imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
+        }
+
+        const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+
+        const cardHtml = `
+          <div class="card" onclick="openProduct(${originalIndex})">
+            <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
+            <div class="card-info">
+              <div class="card-title">${product.title || 'Без названия'}</div>
+              <div class="card-price">${priceVal} сум</div>
+              <div class="card-meta">${product.category || 'Без категории'} • ${product.condition || '8/10'}</div>
+            </div>
+          </div>
+        `;
+        gridEl.innerHTML += cardHtml;
+      });
+    }
+
+    function filterCategory(category, element) {
+      currentCategory = category.toLowerCase();
+
+      // Обновляем визуальное выделение кнопок категорий
+      const chips = document.querySelectorAll('.cat-chip');
+      chips.forEach(chip => chip.classList.remove('active'));
+      
+      if (element) {
+        element.classList.add('active');
+      } else {
+        chips.forEach(chip => {
+          if (chip.innerText.toLowerCase() === currentCategory) {
+            chip.classList.add('active');
+          }
+        });
+      }
+
+      if (currentCategory === 'все') {
+        renderProducts(loadedProducts);
+      } else {
+        const filtered = loadedProducts.filter(p => 
+          p.category && p.category.toLowerCase().includes(currentCategory)
+        );
+        renderProducts(filtered);
+      }
+    }
+
+    function openCategories() {
       const target = document.getElementById('catalog-section');
       if (target) {
         target.scrollIntoView({ behavior: 'smooth' });
