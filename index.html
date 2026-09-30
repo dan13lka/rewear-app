@@ -62,8 +62,8 @@
       outline: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      width: 24px !important; 
-      height: 24px !important; 
+      width: 28px !important; 
+      height: 28px !important; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
@@ -167,18 +167,18 @@
     /* МОДАЛЬНОЕ ОКНО */
     .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0d0d0d; z-index: 100; overflow-y: auto; padding: 16px; padding-bottom: 90px; }
     
-    /* КРЕСТИК СЛЕВА ВВЕРХУ */
+    /* КРЕСТИК СЛЕВА ВВЕРХУ (Смещен ниже и ближе к центру для удобства) */
     .modal-close { 
       position: absolute; 
-      top: 16px; 
-      left: 16px; 
+      top: 24px; 
+      left: 24px; 
       background: transparent !important; 
       border: none !important; 
       outline: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      width: 24px !important; 
-      height: 24px !important; 
+      width: 36px !important; 
+      height: 36px !important; 
       cursor: pointer; 
       z-index: 101; 
       display: flex; 
@@ -193,18 +193,18 @@
       stroke: #8c8c8c !important;
     }
 
-    /* СЕРДЕЧКО СПРАВА ВВЕРХУ */
+    /* СЕРДЕЧКО СПРАВА ВВЕРХУ (Смещено ниже и ближе к центру для удобства) */
     .modal-fav-btn {
       position: absolute; 
-      top: 16px; 
-      right: 16px; 
+      top: 24px; 
+      right: 24px; 
       background: transparent !important; 
       border: none !important; 
       outline: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      width: 24px !important; 
-      height: 24px !important; 
+      width: 36px !important; 
+      height: 36px !important; 
       cursor: pointer; 
       z-index: 101; 
       display: flex; 
@@ -372,7 +372,7 @@
 
     let loadedProducts = [];
     
-    // СЧИТЫВАЕМ СОХРАНЁННЫЕ ДАННЫЕ ИЗ LOCALSTORAGE (ЧТОБЫ НЕ СБРАСЫВАЛИСЬ ПРИ ЗАКРЫТИИ)
+    // СЧИТЫВАЕМ СОХРАНЁННЫЕ ДАННЫЕ ИЗ LOCALSTORAGE
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
     let activeModalIndex = null;
@@ -446,7 +446,7 @@
         const cardHtml = `
           <div class="card" onclick="openProduct(${originalIndex})">
             <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-              <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#8c8c8c' : 'none'}" stroke="#8c8c8c" stroke-width="2">
+              <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#8c8c8c'}" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
@@ -500,8 +500,8 @@
       const svgIcon = document.getElementById('fav-icon-' + strId);
       if (svgIcon) {
         const isFav = favorites.includes(strId);
-        svgIcon.setAttribute('fill', isFav ? '#8c8c8c' : 'none');
-        svgIcon.setAttribute('stroke', '#8c8c8c');
+        svgIcon.setAttribute('fill', isFav ? '#ff4d4d' : 'none');
+        svgIcon.setAttribute('stroke', isFav ? '#ff4d4d' : '#8c8c8c');
       }
 
       renderFavorites();
@@ -518,8 +518,8 @@
       const isFav = favorites.includes(String(id));
       const mFavIcon = document.getElementById('m-fav-icon');
       if (mFavIcon) {
-        mFavIcon.setAttribute('fill', isFav ? '#8c8c8c' : 'none');
-        mFavIcon.setAttribute('stroke', '#8c8c8c');
+        mFavIcon.setAttribute('fill', isFav ? '#ff4d4d' : 'none');
+        mFavIcon.setAttribute('stroke', isFav ? '#ff4d4d' : '#8c8c8c');
       }
     }
 
@@ -539,7 +539,7 @@
           grid.innerHTML += `
             <div class="card" onclick="openProduct(${originalIndex})">
               <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-                <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="#8c8c8c" stroke="#8c8c8c" stroke-width="2">
+                <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="#ff4d4d" stroke="#ff4d4d" stroke-width="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
               </button>
