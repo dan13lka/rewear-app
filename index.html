@@ -164,7 +164,49 @@
 
     /* МОДАЛЬНОЕ ОКНО */
     .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0d0d0d; z-index: 100; overflow-y: auto; padding: 16px; padding-bottom: 90px; }
-    .modal-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 101; }
+    
+    /* КРЕСТИК СЛЕВА ВВЕРХУ */
+    .modal-close { 
+      position: absolute; 
+      top: 16px; 
+      left: 16px; 
+      background: rgba(22, 22, 22, 0.7); 
+      color: #a0a0a0; 
+      border: 1px solid #2a2a2a; 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 50%; 
+      font-size: 16px; 
+      font-weight: 300; 
+      cursor: pointer; 
+      z-index: 101; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      transition: transform 0.15s ease, background-color 0.15s;
+    }
+    .modal-close:active { transform: scale(0.9); background: rgba(35, 35, 35, 0.9); }
+
+    /* СЕРДЕЧКО СПРАВА ВВЕРХУ */
+    .modal-fav-btn {
+      position: absolute; 
+      top: 16px; 
+      right: 16px; 
+      background: rgba(22, 22, 22, 0.7); 
+      border: 1px solid #2a2a2a; 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 50%; 
+      cursor: pointer; 
+      z-index: 101; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      transition: transform 0.15s ease, background-color 0.15s;
+    }
+    .modal-fav-btn:active { transform: scale(0.9); background: rgba(35, 35, 35, 0.9); }
+    .modal-fav-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
     .modal-img { width: 100%; height: 320px; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
     .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
     .modal-price { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
@@ -253,9 +295,18 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО -->
+  <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
   <div id="product-modal" class="modal">
+    <!-- КРЕСТИК СЛЕВА ВВЕРХУ -->
     <button class="modal-close" onclick="closeProduct()">✕</button>
+    
+    <!-- СЕРДЕЧКО СПРАВА ВВЕРХУ -->
+    <button class="modal-fav-btn" onclick="toggleFavFromModal()">
+      <svg id="m-fav-icon" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+      </svg>
+    </button>
+
     <img id="m-img" class="modal-img" src="" alt="">
     <div id="m-title" class="modal-title"></div>
     <div id="m-price" class="modal-price"></div>
@@ -303,13 +354,21 @@
     tg.expand();
 
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6IZE0NjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
     const ADMIN_USERNAME = 'KYJITYPA'; // Ваш Telegram без @
 
     let loadedProducts = [];
-    let favorites = [];
-    let cart = [];
+    
+    // СЧИТЫВАЕМ СОХРАНЁННЫЕ ДАННЫЕ ИЗ LOCALSTORAGE (ЧТОБЫ НЕ СБРАСЫВАЛИСЬ ПРИ ЗАКРЫТИИ)
+    let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
+    let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
     let activeModalIndex = null;
+
+    function saveState() {
+      localStorage.setItem('rewear_favs', JSON.stringify(favorites));
+      localStorage.setItem('rewear_cart', JSON.stringify(cart));
+      updateCartBadge();
+    }
 
     async function initAndLoad() {
       if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -317,6 +376,8 @@
         document.getElementById('user-name').innerText = (user.first_name || '') + ' ' + (user.last_name || '');
         document.getElementById('user-handle').innerText = user.username ? '@' + user.username : 'Telegram User';
       }
+
+      updateCartBadge();
 
       const loadingEl = document.getElementById('loading');
 
@@ -421,6 +482,8 @@
         favorites.push(strId);
       }
 
+      saveState();
+
       const svgIcon = document.getElementById('fav-icon-' + strId);
       if (svgIcon) {
         const isFav = favorites.includes(strId);
@@ -429,6 +492,22 @@
       }
 
       renderFavorites();
+    }
+
+    function toggleFavFromModal() {
+      if (activeModalIndex === null) return;
+      const p = loadedProducts[activeModalIndex];
+      toggleFav(null, p.id);
+      updateModalFavIcon(p.id);
+    }
+
+    function updateModalFavIcon(id) {
+      const isFav = favorites.includes(String(id));
+      const mFavIcon = document.getElementById('m-fav-icon');
+      if (mFavIcon) {
+        mFavIcon.setAttribute('fill', isFav ? '#ff4d4d' : 'none');
+        mFavIcon.setAttribute('stroke', isFav ? '#ff4d4d' : '#ffffff');
+      }
     }
 
     function renderFavorites() {
@@ -472,14 +551,14 @@
       } else {
         cart.push(strId);
       }
-      updateCartBadge();
+      saveState();
       closeProduct();
     }
 
     function removeFromCart(id) {
       const strId = String(id);
       cart = cart.filter(itemId => itemId !== strId);
-      updateCartBadge();
+      saveState();
       renderCart();
     }
 
@@ -588,6 +667,8 @@
       
       const cartBtn = document.getElementById('m-cart-btn');
       cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
+
+      updateModalFavIcon(p.id);
 
       document.getElementById('product-modal').style.display = 'block';
       tg.BackButton.show();
