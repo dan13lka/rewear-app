@@ -983,7 +983,7 @@
   document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
   
   document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
-  document.getElementById('m-size').innerText = 'Размер: ' + (p.size || 'M');
+     renderSizeOptions(p.sizes || []);
   
   document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
   
