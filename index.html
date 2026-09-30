@@ -382,6 +382,170 @@
   color: #8c8c8c;
   margin-bottom: 4px;
 }
+ /* БЛОК ОТЗЫВОВ В ПРОФИЛЕ */
+.reviews-section {
+  margin-top: 24px;
+}
+.reviews-header {
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.reviews-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.reviews-rating-big {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+.reviews-rating-details {
+  flex: 1;
+}
+.reviews-stars {
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #ffb800;
+  margin-bottom: 2px;
+}
+.reviews-count {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+.btn-leave-review {
+  width: 100%;
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: opacity 0.2s;
+}
+.btn-leave-review:active { opacity: 0.8; }
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.review-card {
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 14px;
+}
+.review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.review-card-author {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.review-card-date {
+  font-size: 11px;
+  color: #666;
+}
+.review-card-stars {
+  font-size: 14px;
+  color: #ffb800;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.review-card-text {
+  font-size: 13px;
+  color: #cccccc;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* МОДАЛКА ОТЗЫВА */
+.review-form-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 40px;
+  margin-bottom: 4px;
+}
+.review-form-subtitle {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 24px;
+}
+.review-form {
+  padding-bottom: 40px;
+}
+.review-form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.review-rating-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.review-rating-picker .star {
+  font-size: 36px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+.review-rating-picker .star.active {
+  color: #ffb800;
+}
+.review-rating-picker .star:active {
+  transform: scale(0.9);
+}
+.review-textarea {
+  width: 100%;
+  min-height: 120px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+.review-textarea::placeholder {
+  color: #666;
+}
+.btn-send-review {
+  width: 100%;
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-send-review:active { opacity: 0.8; }
+  
   </style>
 </head>
 <body>
@@ -487,20 +651,41 @@
     </div>
   </div>
 
-  <!-- 4. ПРОФИЛЬ -->
-  <div id="tab-profile" class="tab-content">
-    <div class="section-title">Мой профиль</div>
-    <div class="profile-card">
-      <div class="profile-avatar">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+<!-- 4. ПРОФИЛЬ -->
+<div id="tab-profile" class="tab-content">
+  <div class="section-title">Мой профиль</div>
+  <div class="profile-card">
+    <div class="profile-avatar">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+    </div>
+    <h3 id="user-name" style="margin-bottom: 4px;">Пользователь</h3>
+    <p id="user-handle" style="color: #8c8c8c; font-size: 13px;">@username</p>
+  </div>
+
+  <!-- БЛОК ОТЗЫВОВ -->
+  <div class="reviews-section">
+    <div class="reviews-header">
+      <div class="reviews-header-left">
+        <div class="reviews-rating-big" id="reviews-avg-rating">—</div>
+        <div class="reviews-rating-details">
+          <div class="reviews-stars" id="reviews-avg-stars">☆☆☆☆☆</div>
+          <div class="reviews-count" id="reviews-count">Пока нет отзывов</div>
+        </div>
       </div>
-      <h3 id="user-name" style="margin-bottom: 4px;">Пользователь</h3>
-      <p id="user-handle" style="color: #8c8c8c; font-size: 13px;">@username</p>
+    </div>
+
+    <button class="btn-leave-review" onclick="openReviewModal()">Оставить отзыв</button>
+
+    <div class="reviews-list" id="reviews-list"></div>
+
+    <div id="reviews-empty" style="text-align: center; color: #8c8c8c; padding: 24px 0; font-size: 13px;">
+      Пока нет отзывов. Будьте первым!
     </div>
   </div>
+</div>
 
   <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
   <div id="product-modal" class="modal">
@@ -538,7 +723,34 @@
       <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">В корзину</button>
     </div>
   </div>
+<!-- МОДАЛКА ОТЗЫВА -->
+<div id="review-modal" class="modal">
+  <button class="modal-close" onclick="closeReviewModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
 
+  <div class="review-form-title">Оставить отзыв</div>
+  <div class="review-form-subtitle">Расскажите, как всё прошло</div>
+
+  <div class="review-form">
+    <div class="review-form-label">Ваша оценка:</div>
+    <div class="review-rating-picker" id="review-rating-picker">
+      <div class="star" data-value="1" onclick="selectRating(1)">☆</div>
+      <div class="star" data-value="2" onclick="selectRating(2)">☆</div>
+      <div class="star" data-value="3" onclick="selectRating(3)">☆</div>
+      <div class="star" data-value="4" onclick="selectRating(4)">☆</div>
+      <div class="star" data-value="5" onclick="selectRating(5)">☆</div>
+    </div>
+
+    <div class="review-form-label">Ваш отзыв:</div>
+    <textarea id="review-text" class="review-textarea" placeholder="Напишите пару слов о покупке..." maxlength="500"></textarea>
+
+    <button class="btn-send-review" onclick="submitReview()">Отправить отзыв</button>
+  </div>
+</div>
   <!-- НИЖНЕЕ МЕНЮ -->
  <div class="nav-bar">
   <div class="nav-item active" onclick="switchTab('home', this)">
@@ -774,8 +986,9 @@
     if (tabName === 'profile' && items[2]) items[2].classList.add('active');
   }
 
-  if (tabName === 'favorites') renderFavorites();
+ if (tabName === 'favorites') renderFavorites();
   if (tabName === 'cart') renderCart();
+  if (tabName === 'profile') loadReviews();
 }
 
 function toggleFav(e, id) {
@@ -1184,6 +1397,157 @@ function selectSize(size, chipEl) {
     chip.classList.remove('selected');
   });
   if (chipEl) chipEl.classList.add('selected');
+}
+   // === ОТЗЫВЫ ===
+let selectedReviewRating = 0;
+
+async function loadReviews() {
+  const listEl = document.getElementById('reviews-list');
+  const emptyEl = document.getElementById('reviews-empty');
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: reviews, error } = await client
+      .from('reviews')
+      .select('*')
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Средний рейтинг
+    const avgEl = document.getElementById('reviews-avg-rating');
+    const starsEl = document.getElementById('reviews-avg-stars');
+    const countEl = document.getElementById('reviews-count');
+
+    if (!reviews || reviews.length === 0) {
+      avgEl.innerText = '—';
+      starsEl.innerText = '☆☆☆☆☆';
+      countEl.innerText = 'Пока нет отзывов';
+      listEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const avg = (totalRating / reviews.length).toFixed(1);
+
+    avgEl.innerText = avg;
+    starsEl.innerText = renderStars(Math.round(avg));
+    countEl.innerText = `${reviews.length} ${declOfNum(reviews.length, ['отзыв', 'отзыва', 'отзывов'])}`;
+
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = '';
+
+    reviews.forEach(r => {
+      const date = new Date(r.created_at);
+      const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      listEl.innerHTML += `
+        <div class="review-card">
+          <div class="review-card-header">
+            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
+            <div class="review-card-date">${dateStr}</div>
+          </div>
+          <div class="review-card-stars">${renderStars(r.rating)}</div>
+          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки отзывов:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Не удалось загрузить отзывы.';
+  }
+}
+
+function renderStars(rating) {
+  let s = '';
+  for (let i = 1; i <= 5; i++) {
+    s += i <= rating ? '★' : '☆';
+  }
+  return s;
+}
+
+function declOfNum(n, titles) {
+  const cases = [2, 0, 1, 1, 1, 2];
+  return titles[(n % 100 > 4 && n % 100 < 20) ? 2 : cases[(n % 10 < 5) ? n % 10 : 5]];
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Открыть модалку отзыва
+function openReviewModal() {
+  selectedReviewRating = 0;
+  document.getElementById('review-text').value = '';
+  document.querySelectorAll('#review-rating-picker .star').forEach(s => s.classList.remove('active'));
+  document.getElementById('review-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeReviewModal);
+}
+
+function closeReviewModal() {
+  document.getElementById('review-modal').style.display = 'none';
+  tg.BackButton.hide();
+}
+
+function selectRating(value) {
+  selectedReviewRating = value;
+  document.querySelectorAll('#review-rating-picker .star').forEach(star => {
+    const v = parseInt(star.getAttribute('data-value'));
+    if (v <= value) {
+      star.classList.add('active');
+      star.innerText = '★';
+    } else {
+      star.classList.remove('active');
+      star.innerText = '☆';
+    }
+  });
+}
+
+async function submitReview() {
+  if (selectedReviewRating === 0) {
+    tg.showAlert('Поставьте оценку');
+    return;
+  }
+
+  const text = document.getElementById('review-text').value.trim();
+  if (text.length < 3) {
+    tg.showAlert('Напишите хотя бы пару слов');
+    return;
+  }
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const userName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Покупатель';
+  const userUsername = user.username || '';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { error } = await client.from('reviews').insert({
+      user_tg_id: user.id || null,
+      user_name: userName,
+      user_username: userUsername,
+      rating: selectedReviewRating,
+      text: text,
+      is_approved: false
+    });
+
+    if (error) throw error;
+
+    tg.showAlert('Спасибо! Ваш отзыв появится после проверки модератором.');
+    closeReviewModal();
+  } catch (err) {
+    console.error('Ошибка отправки отзыва:', err);
+    tg.showAlert('Не удалось отправить отзыв. Попробуйте ещё раз.');
+  }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
