@@ -749,29 +749,89 @@
       }
     }
 
-    function checkoutCart() {
-      const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
-      if (cartProducts.length === 0) return;
+    async function checkoutCart() {
+  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
+  if (cartProducts.length === 0) return;
 
-      let message = 'Здравствуйте! Я хочу купить следующие товары из RE:WEAR:\n\n';
-      
-      let total = 0;
-      cartProducts.forEach((p, idx) => {
-        const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
-        message += `${idx + 1}. ${p.title} (Размер: ${p.size || 'не указан'})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
-        total += Number(p.price || 0);
-      });
+  let total = 0;
+  const itemsForOrder = cartProducts.map(p => {
+    total += Number(p.price || 0);
+    return {
+      id: p.id,
+      title: p.title || 'Без названия',
+      price: Number(p.price || 0),
+      size: p.size || '',
+      shop: p.shop || ''
+    };
+  });
 
-      message += `\nИтого: ${total.toLocaleString('ru-RU')} сум`;
-      
-      const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
-      
-      if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(targetUrl);
-      } else {
-        window.open(targetUrl, '_blank');
-      }
-    }
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
+  const buyerUsername = user.username || '';
+
+  // 1. Сохраняем заказ в Supabase
+  let orderId = null;
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data, error } = await client.from('orders').insert({
+      buyer_tg_id: user.id || null,
+      buyer_username: buyerUsername,
+      buyer_name: buyerName,
+      items: itemsForOrder,
+      total_sum: total,
+      status: 'new'
+    }).select().single();
+
+    if (error) throw error;
+    orderId = data.id;
+  } catch (err) {
+    console.error('Ошибка сохранения заказа:', err);
+    tg.showAlert('Не удалось сохранить заказ. Попробуйте ещё раз.');
+    return;
+  }
+
+  // 2. Отправляем уведомление тебе в ТГ
+  try {
+    await fetch('https://lseatoyffptmjljinswp.supabase.co/functions/v1/notify-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        id: orderId,
+        buyer_name: buyerName,
+        buyer_username: buyerUsername,
+        items: itemsForOrder,
+        total_sum: total
+      })
+    });
+  } catch (err) {
+    console.error('Ошибка отправки уведомления:', err);
+    // Не прерываем — заказ уже сохранён
+  }
+
+  // 3. Открываем чат с тобой (как раньше)
+  let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
+  cartProducts.forEach((p, idx) => {
+    const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
+    message += `${idx + 1}. ${p.title} (Размер: ${p.size || 'не указан'})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
+  });
+  message += `\nИтого: ${total.toLocaleString('ru-RU')} сум`;
+
+  const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
+
+  // 4. Чистим корзину
+  cart = [];
+  saveState();
+  renderCart();
+
+  if (tg && tg.openTelegramLink) {
+    tg.openTelegramLink(targetUrl);
+  } else {
+    window.open(targetUrl, '_blank');
+  }
+}
 
     function openProduct(index) {
       activeModalIndex = index;
