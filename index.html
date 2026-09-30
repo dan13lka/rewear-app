@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RE:WEAR</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -96,8 +97,9 @@
     .cart-item { display: flex; align-items: center; background: #161616; border: 1px solid #222222; border-radius: 12px; padding: 10px; gap: 12px; position: relative; }
     .cart-item-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: #222; flex-shrink: 0; }
     .cart-item-info { flex: 1; min-width: 0; }
-    .cart-item-title { font-size: 14px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .cart-item-title { font-size: 14px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
     .cart-item-price { font-size: 14px; font-weight: 700; color: #ffffff; }
+    .cart-item-meta { font-size: 11px; color: #8c8c8c; margin-top: 2px; }
     .cart-item-remove { background: none; border: none; color: #8c8c8c; font-size: 18px; padding: 4px 8px; cursor: pointer; }
 
     .cart-checkout-bar {
@@ -218,8 +220,14 @@
     .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
     .modal-price { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
     
-    .modal-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .modal-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
     .tag { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #a0a0a0; }
+    
+    /* Стили для выбора размера в модалке */
+    .size-selector-wrapper { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .size-btn { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 14px; border-radius: 8px; font-size: 12px; color: #a0a0a0; cursor: pointer; transition: all 0.2s; }
+    .size-btn.active { background: #ffffff; color: #0d0d0d; border-color: #ffffff; font-weight: 700; }
+
     .modal-desc { font-size: 14px; color: #cccccc; line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
     
     .modal-actions { position: fixed; bottom: 20px; left: 16px; right: 16px; display: flex; gap: 10px; z-index: 102; }
@@ -307,21 +315,21 @@
     </div>
 
     <div id="loading">Загрузка товаров...</div>
-    <div class="grid" id="catalog-grid" style="display: none;"></div>
+    <div class="grid" id="catalog-grid"></div>
   </div>
 
   <!-- 2. ИЗБРАННОЕ -->
   <div id="tab-favorites" class="tab-content">
     <div class="section-title">Избранное</div>
     <div class="grid" id="favorites-grid"></div>
-    <div id="fav-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">У вас пока нет сохранённых товаров.</div>
+    <div id="fav-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0; display: none;">У вас пока нет сохранённых товаров.</div>
   </div>
 
   <!-- 3. КОРЗИНА -->
   <div id="tab-cart" class="tab-content">
     <div class="section-title">Корзина</div>
     <div class="cart-list" id="cart-list"></div>
-    <div id="cart-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">Корзина пуста.</div>
+    <div id="cart-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0; display: none;">Корзина пуста.</div>
 
     <div id="cart-checkout-bar" class="cart-checkout-bar" style="display: none;">
       <div>
@@ -368,7 +376,10 @@
     <div id="m-price" class="modal-price"></div>
     <div class="modal-tags">
       <span id="m-category" class="tag"></span>
-      <span id="m-size" class="tag"></span>
+      <div style="width: 100%;">
+        <span style="font-size: 11px; color: #8c8c8c; display: block; margin-bottom: 4px; text-transform: uppercase;">Размер:</span>
+        <div id="m-sizes-container" class="size-selector-wrapper"></div>
+      </div>
     </div>
     <div id="m-desc" class="modal-desc"></div>
     
@@ -405,23 +416,28 @@
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : { expand: () => {}, BackButton: { show: () => {}, hide: () => {}, onClick: () => {} } };
     tg.expand();
 
+    const ADMIN_USERNAME = 'KYJITYPA';
+
+    // Инициализация Supabase клиента (твои реальные ключи)
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
-    const ADMIN_USERNAME = 'KYJITYPA'; // Твой Telegram юзернейм
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXatOiJzdXBhYmFzZS1yZWYiLCJpYXQiOjE3NDEyMzM5NjYsImV4cCI6MjA1NjgxMzk2Nn0.S00aUeN7GZ_j_sQ25Yt7G1c_s9X55cZ1_g8_j1s_2aQ';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let loadedProducts = [];
     let selectedCategory = 'все';
-    
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
+    let cartSelectedSizes = JSON.parse(localStorage.getItem('rewear_cart_sizes') || '{}');
+    let currentSelectedSize = '';
     let activeModalIndex = null;
 
     function saveState() {
       localStorage.setItem('rewear_favs', JSON.stringify(favorites));
       localStorage.setItem('rewear_cart', JSON.stringify(cart));
+      localStorage.setItem('rewear_cart_sizes', JSON.stringify(cartSelectedSizes));
       updateCartBadge();
     }
 
@@ -432,33 +448,30 @@
         document.getElementById('user-handle').innerText = user.username ? '@' + user.username : 'Telegram User';
       }
 
-      updateCartBadge();
+      await fetchProducts();
+    }
 
+    async function fetchProducts() {
       const loadingEl = document.getElementById('loading');
+      loadingEl.style.display = 'block';
 
       try {
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const { data: products, error } = await client.from('products').select('*');
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*')
+          .order('id', { ascending: false });
 
         if (error) throw error;
 
-        if (!products || products.length === 0) {
-          loadingEl.innerText = "В каталоге пока нет товаров.";
-          return;
-        }
-
-        loadedProducts = products;
+        loadedProducts = data || [];
         populateShopFilter(loadedProducts);
-        renderProducts(loadedProducts);
-
+        applyFilters();
       } catch (err) {
-        console.error(err);
-        loadingEl.style.color = "#ff4d4d";
-        loadingEl.innerText = "Ошибка загрузки: " + err.message;
+        console.error('Ошибка загрузки из Supabase:', err);
+        loadingEl.innerText = 'Ошибка загрузки товаров из базы данных.';
       }
     }
 
-    // Автоматически заполняем список шопов в фильтре на основе загруженных товаров
     function populateShopFilter(products) {
       const shopSelect = document.getElementById('filter-shop');
       const shops = new Set();
@@ -485,7 +498,6 @@
       btn.classList.toggle('active');
     }
 
-    // Комплексная фильтрация + Сортировка по цене
     function applyFilters() {
       const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
       const selectedShop = document.getElementById('filter-shop').value;
@@ -494,27 +506,22 @@
       const sortType = document.getElementById('filter-sort').value;
 
       let filtered = loadedProducts.filter(product => {
-        // 1. Поиск по тексту
         const titleMatch = (product.title || '').toLowerCase().includes(searchQuery);
         const descMatch = (product.description || '').toLowerCase().includes(searchQuery);
         const shopTextMatch = (product.shop || '').toLowerCase().includes(searchQuery);
         const searchMatches = titleMatch || descMatch || shopTextMatch;
 
-        // 2. Категория
         const catLower = selectedCategory.toLowerCase();
         const categoryMatches = (catLower === 'все') || (product.category && product.category.toLowerCase().includes(catLower));
 
-        // 3. Продавец
         const shopMatches = (selectedShop === 'all') || (product.shop === selectedShop);
 
-        // 4. Цена
         const price = Number(product.price || 0);
         const priceMatches = price >= minPrice && price <= maxPrice;
 
         return searchMatches && categoryMatches && shopMatches && priceMatches;
       });
 
-      // Логика сортировки по цене
       if (sortType === 'price-asc') {
         filtered.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
       } else if (sortType === 'price-desc') {
@@ -563,7 +570,7 @@
 
       products.forEach((product) => {
         const originalIndex = loadedProducts.indexOf(product);
-        let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
+        let imageUrl = '';
         if (product.image_urls) {
           imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
           imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
@@ -694,8 +701,10 @@
 
       if (cart.includes(strId)) {
         cart = cart.filter(id => id !== strId);
+        delete cartSelectedSizes[strId];
       } else {
         cart.push(strId);
+        cartSelectedSizes[strId] = currentSelectedSize;
       }
       saveState();
       closeProduct();
@@ -704,6 +713,7 @@
     function removeFromCart(id) {
       const strId = String(id);
       cart = cart.filter(itemId => itemId !== strId);
+      delete cartSelectedSizes[strId];
       saveState();
       renderCart();
     }
@@ -732,12 +742,15 @@
           totalSum += Number(product.price || 0);
           let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
           
+          const chosenSize = cartSelectedSizes[product.id] || product.size || 'M';
+
           listEl.innerHTML += `
             <div class="cart-item">
               <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
               <div class="cart-item-info">
                 <div class="cart-item-title">${product.title || 'Без названия'}</div>
                 <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
+                <div class="cart-item-meta">Размер: ${chosenSize}</div>
               </div>
               <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
             </div>
@@ -758,19 +771,15 @@
       let total = 0;
       cartProducts.forEach((p, idx) => {
         const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
-        message += `${idx + 1}. ${p.title} (Размер: ${p.size || 'не указан'})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
+        const chosenSize = cartSelectedSizes[p.id] || p.size || 'M';
+        message += `${idx + 1}. ${p.title} (Размер: ${chosenSize})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
         total += Number(p.price || 0);
       });
 
       message += `\nИтого: ${total.toLocaleString('ru-RU')} сум`;
       
       const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
-      
-      if (tg && tg.openTelegramLink) {
-        tg.openTelegramLink(targetUrl);
-      } else {
-        window.open(targetUrl, '_blank');
-      }
+      window.open(targetUrl, '_blank');
     }
 
     function openProduct(index) {
@@ -786,8 +795,27 @@
       document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
       
       document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
-      document.getElementById('m-size').innerText = 'Размер: ' + (p.size || 'M');
       
+      // Рендерим интерактивные кнопки размеров
+      const sizesContainer = document.getElementById('m-sizes-container');
+      sizesContainer.innerHTML = '';
+      
+      const sizesList = p.availableSizes || [p.size || 'M'];
+      currentSelectedSize = sizesList[0];
+
+      sizesList.forEach(sz => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `size-btn ${sz === currentSelectedSize ? 'active' : ''}`;
+        btn.innerText = sz;
+        btn.onclick = () => {
+          document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentSelectedSize = sz;
+        };
+        sizesContainer.appendChild(btn);
+      });
+
       document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
       
       const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
@@ -800,13 +828,10 @@
       updateModalFavIcon(p.id);
 
       document.getElementById('product-modal').style.display = 'block';
-      tg.BackButton.show();
-      tg.BackButton.onClick(closeProduct);
     }
 
     function closeProduct() {
       document.getElementById('product-modal').style.display = 'none';
-      tg.BackButton.hide();
       activeModalIndex = null;
     }
 
@@ -814,4 +839,3 @@
   </script>
 </body>
 </html>
-
