@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>RE:WEAR Catalog</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем клиент Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg-color: #f7f7f7;
-      --card-bg: #ffffff;
-      --text-color: #111111;
-      --text-muted: #777777;
-      --accent-color: #000000;
+      --bg-color: #000000;
+      --card-bg: #111111;
+      --text-color: #ffffff;
+      --text-muted: #8c8c8c;
+      --accent-color: #ffffff;
       --accent-red: #ff4d4d;
-      --border-color: #eeeeee;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --border-color: #222222;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       --radius: 12px;
     }
 
@@ -35,7 +37,7 @@
     header {
       position: sticky;
       top: 0;
-      background: var(--card-bg);
+      background: var(--bg-color);
       z-index: 100;
       padding: 12px 16px;
       border-bottom: 1px solid var(--border-color);
@@ -51,7 +53,8 @@
       padding: 10px 14px;
       border-radius: 8px;
       border: 1px solid var(--border-color);
-      background: #f0f0f0;
+      background: #111111;
+      color: var(--text-color);
       font-size: 14px;
       outline: none;
     }
@@ -60,7 +63,7 @@
       padding: 10px 12px;
       border-radius: 8px;
       border: 1px solid var(--border-color);
-      background: #f0f0f0;
+      background: #111111;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -69,11 +72,11 @@
 
     .filter-toggle-btn.active {
       background: var(--accent-color);
-      color: #fff;
+      color: #000;
     }
 
     .filter-toggle-btn.active svg {
-      stroke: #fff;
+      stroke: #000;
     }
 
     .filter-panel {
@@ -107,7 +110,8 @@
       border-radius: 6px;
       border: 1px solid var(--border-color);
       font-size: 14px;
-      background: var(--card-bg);
+      background: #111;
+      color: #fff;
     }
 
     .price-range {
@@ -131,6 +135,7 @@
       border-radius: 6px;
       border: 1px solid var(--border-color);
       background: transparent;
+      color: var(--text-muted);
       font-size: 13px;
       cursor: pointer;
     }
@@ -156,12 +161,14 @@
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
+      color: var(--text-muted);
     }
 
     .cat-chip.active {
       background: var(--accent-color);
-      color: #ffffff;
+      color: #000000;
       border-color: var(--accent-color);
+      font-weight: 600;
     }
 
     .grid {
@@ -175,7 +182,7 @@
       background: var(--card-bg);
       border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
       position: relative;
       display: flex;
       flex-direction: column;
@@ -185,15 +192,15 @@
       width: 100%;
       aspect-ratio: 3/4;
       object-fit: cover;
-      background: #e0e0e0;
+      background: #1a1a1a;
     }
 
     .card-fav-btn {
       position: absolute;
       top: 8px;
       right: 8px;
-      background: rgba(255, 255, 255, 0.85);
-      border: none;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-color);
       border-radius: 50%;
       width: 32px;
       height: 32px;
@@ -229,6 +236,7 @@
       font-weight: 500;
       line-height: 1.3;
       margin-bottom: 6px;
+      color: #fff;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -238,6 +246,7 @@
     .card-price {
       font-size: 14px;
       font-weight: 700;
+      color: #fff;
       margin-top: auto;
     }
 
@@ -255,9 +264,9 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.8);
       z-index: 200;
-      backdrop-filter: blur(3px);
+      backdrop-filter: blur(5px);
     }
 
     .modal-content {
@@ -265,7 +274,8 @@
       bottom: 0;
       width: 100%;
       max-height: 90vh;
-      background: var(--card-bg);
+      background: #111111;
+      border: 1px solid var(--border-color);
       border-radius: 20px 20px 0 0;
       overflow-y: auto;
       padding: 20px;
@@ -283,6 +293,7 @@
       aspect-ratio: 3/4;
       object-fit: cover;
       margin-bottom: 16px;
+      background: #1a1a1a;
     }
 
     .modal-shop {
@@ -295,13 +306,14 @@
     .modal-title {
       font-size: 18px;
       font-weight: 700;
+      color: #fff;
       margin: 4px 0 8px 0;
     }
 
     .modal-price {
       font-size: 18px;
       font-weight: 800;
-      color: var(--accent-color);
+      color: #fff;
       margin-bottom: 12px;
     }
 
@@ -312,16 +324,18 @@
     }
 
     .modal-tag {
-      background: #f0f0f0;
-      padding: 4px 10px;
-      border-radius: 6px;
+      background: #222;
+      color: #ccc;
+      padding: 6px 12px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
+      border: 1px solid var(--border-color);
     }
 
     .modal-desc {
       font-size: 14px;
-      color: #444;
+      color: #aaa;
       line-height: 1.5;
       margin-bottom: 20px;
     }
@@ -333,8 +347,8 @@
 
     .btn-primary {
       flex: 1;
-      background: var(--accent-color);
-      color: #fff;
+      background: #fff;
+      color: #000;
       padding: 12px;
       border-radius: 10px;
       border: none;
@@ -346,10 +360,11 @@
     }
 
     .btn-secondary {
-      padding: 12px;
+      padding: 12px 16px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
-      background: #fff;
+      background: #222;
+      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -361,7 +376,7 @@
       position: fixed;
       bottom: 0;
       width: 100%;
-      background: var(--card-bg);
+      background: var(--bg-color);
       border-top: 1px solid var(--border-color);
       display: flex;
       justify-content: space-around;
@@ -380,7 +395,7 @@
     }
 
     .nav-item.active {
-      color: var(--accent-color);
+      color: #fff;
       font-weight: 600;
     }
 
@@ -388,14 +403,19 @@
       width: 22px;
       height: 22px;
       margin-bottom: 2px;
+      stroke: var(--text-muted);
+    }
+
+    .nav-item.active svg {
+      stroke: #fff;
     }
 
     .badge {
       position: absolute;
       top: -2px;
       right: 12px;
-      background: var(--accent-red);
-      color: white;
+      background: #fff;
+      color: #000;
       font-size: 10px;
       border-radius: 10px;
       padding: 2px 6px;
@@ -423,9 +443,9 @@
       display: flex;
       gap: 12px;
       background: var(--card-bg);
+      border: 1px solid var(--border-color);
       padding: 10px;
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
       align-items: center;
     }
 
@@ -434,6 +454,7 @@
       height: 80px;
       object-fit: cover;
       border-radius: 6px;
+      background: #1a1a1a;
     }
 
     .cart-item-info {
@@ -443,12 +464,14 @@
     .cart-item-title {
       font-size: 13px;
       font-weight: 600;
+      color: #fff;
       margin-bottom: 4px;
     }
 
     .cart-item-price {
       font-size: 14px;
       font-weight: 700;
+      color: #fff;
     }
 
     .cart-item-remove {
@@ -465,9 +488,9 @@
       bottom: 60px;
       left: 0;
       width: 100%;
-      background: var(--card-bg);
-      padding: 12px 16px;
+      background: #111;
       border-top: 1px solid var(--border-color);
+      padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -484,6 +507,7 @@
 
   <!-- HEADER / SEARCH / FILTERS -->
   <header>
+    <div style="font-size: 20px; font-weight: 800; margin-bottom: 10px; letter-spacing: 0.5px;">RE:WEAR</div>
     <div class="search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Поиск вещей или брендов..." oninput="applyFilters()">
       <button class="filter-toggle-btn" id="filter-btn" onclick="toggleFilterPanel()">
@@ -531,6 +555,7 @@
     <div class="cat-chip" onclick="filterCategory('футболки', this)">Футболки</div>
     <div class="cat-chip" onclick="filterCategory('штаны', this)">Штаны</div>
     <div class="cat-chip" onclick="filterCategory('куртки', this)">Куртки</div>
+    <div class="cat-chip" onclick="filterCategory('ветровки', this)">Ветровки</div>
     <div class="cat-chip" onclick="filterCategory('аксессуары', this)">Аксессуары</div>
   </div>
 
@@ -548,6 +573,7 @@
 
   <!-- TAB: CART -->
   <div id="tab-cart" class="tab-content">
+    <div style="padding: 16px 16px 0 16px; font-size: 20px; font-weight: 700;">Корзина</div>
     <div class="empty-state" id="cart-empty" style="display: none;">Ваша корзина пуста</div>
     <div class="cart-list" id="cart-list"></div>
     <div class="cart-checkout-bar" id="cart-checkout-bar" style="display: none;">
@@ -555,7 +581,7 @@
         <div style="font-size: 12px; color: var(--text-muted);">Итого (<span id="cart-total-count">0</span>):</div>
         <div style="font-size: 16px; font-weight: 800;" id="cart-total-sum">0 сум</div>
       </div>
-      <button class="btn-primary" style="flex: initial; padding: 10px 20px;" onclick="checkoutCart()">Оформить</button>
+      <button class="btn-primary" style="flex: initial; padding: 10px 24px;" onclick="checkoutCart()">Купить</button>
     </div>
   </div>
 
@@ -580,8 +606,8 @@
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
         </button>
+        <a id="m-buy-btn" href="#" class="btn-primary" style="text-align: center; display: flex; align-items: center; justify-content: center;" target="_blank">Написать продавцу</a>
         <button class="btn-secondary" id="m-cart-btn" onclick="toggleCartFromModal()">В корзину</button>
-        <a id="m-buy-btn" href="#" class="btn-primary" target="_blank">Купить сейчас</a>
       </div>
     </div>
   </div>
@@ -592,7 +618,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
       </svg>
-      Каталог
+      Главная
     </div>
     <div class="nav-item" onclick="switchTab('favorites', this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -600,21 +626,24 @@
       </svg>
       Избранное
     </div>
-    <div class="nav-item" onclick="switchTab('cart', this)">
+    <div class="nav-item" onclick="switchTab('profile', this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="9" cy="21" r="1"></circle>
-        <circle cx="20" cy="21" r="1"></circle>
-        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
       </svg>
-      Корзина
-      <span class="badge" id="cart-count">0</span>
+      Профиль
     </div>
   </nav>
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    const ADMIN_USERNAME = 'rewear_admin'; // Укажите юзернейм администратора Telegram
-    const API_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Замените на ваш URL Google Apps Script
+    const ADMIN_USERNAME = 'rewear_admin'; // Юзернейм администратора Telegram
+
+    // Ваши реальные данные Supabase
+    const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsmluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let loadedProducts = [];
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
@@ -644,21 +673,17 @@
     async function initAndLoad() {
       updateCartBadge();
       
-      // Попытка загрузить данные из API (или тестовые данные при ошибке)
       try {
-        const response = await fetch(API_URL);
-        if (response.ok) {
-          const data = await response.json();
-          loadedProducts = Array.isArray(data) ? data : (data.products || []);
-        } else {
-          throw new Error('API request failed');
-        }
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*');
+
+        if (error) throw error;
+        loadedProducts = data || [];
       } catch (err) {
-        console.warn('Используем тестовые данные (ошибка загрузки с сервера):', err);
+        console.warn('Ошибка загрузки из Supabase, используются демо-данные:', err);
         loadedProducts = [
-          { id: '1', title: 'Худи Oversize Black', price: 350000, category: 'Худи', size: 'L', shop: 'RE:WEAR Select', description: 'Плотный хлопок, стиль оверсайз.', image_urls: ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500'] },
-          { id: '2', title: 'Футболка Vintage White', price: 180000, category: 'Футболки', size: 'M', shop: 'Vintage Store', description: 'Ретро принт, 100% хлопок.', image_urls: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500'] },
-          { id: '3', title: 'Джинсы Wide Leg', price: 420000, category: 'Штаны', size: 'S', shop: 'Denim Lab', description: 'Широкий крой, стильный деним.', image_urls: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500'] }
+          { id: '1', title: 'Nike 90s Windbreaker', price: 450000, category: 'Ветровки', size: 'L', shop: 'Flate Shop', description: 'Винтажная Nike Windbreaker 90-х. Лёгкая, удобная, в отличном состоянии.', image_urls: ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500'] }
         ];
       }
 
@@ -934,7 +959,11 @@
       }
       
       saveState();
-      closeProduct();
+      
+      const cartBtn = document.getElementById('m-cart-btn');
+      if (cartBtn) {
+        cartBtn.innerText = cart.includes(strId) ? '✓ В корзине' : 'В корзину';
+      }
     }
 
     function removeFromCart(id) {
@@ -945,10 +974,7 @@
     }
 
     function updateCartBadge() {
-      const cartCountEl = document.getElementById('cart-count');
-      if (cartCountEl) {
-        cartCountEl.innerText = cart.length;
-      }
+      // Логика обновления счетчиков при необходимости
     }
 
     function renderCart() {
