@@ -307,6 +307,44 @@
   backdrop-filter: blur(10px);
   z-index: 5;
 }
+ /* БЛОК ВЫБОРА РАЗМЕРА */
+.size-section {
+  margin-bottom: 16px;
+}
+.size-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.size-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.size-chip {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #cccccc;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 48px;
+  text-align: center;
+}
+.size-chip:active {
+  transform: scale(0.95);
+}
+.size-chip.selected {
+  background: #ffffff;
+  color: #0d0d0d;
+  border-color: #ffffff;
+}
   </style>
 </head>
 <body>
@@ -446,16 +484,18 @@
 
     <div class="modal-gallery">
   <div class="gallery-track" id="m-gallery-track"></div>
-  <div class="gallery-counter" id="m-gallery-counter"></div>
   <div class="gallery-dots" id="m-gallery-dots"></div>
 </div>
     <div id="m-shop" class="modal-shop"></div>
     <div id="m-title" class="modal-title"></div>
     <div id="m-price" class="modal-price"></div>
-    <div class="modal-tags">
-      <span id="m-category" class="tag"></span>
-      <span id="m-size" class="tag"></span>
-    </div>
+   <div class="modal-tags">
+  <span id="m-category" class="tag"></span>
+</div>
+<div class="size-section" id="m-size-section" style="display: none;">
+  <div class="size-label">Выберите размер:</div>
+  <div class="size-options" id="m-size-options"></div>
+</div>
     <div id="m-desc" class="modal-desc"></div>
     
     <div class="modal-actions">
@@ -657,7 +697,6 @@
 
         const isFav = favorites.includes(String(product.id));
         const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
-        const sizeStr = product.size ? ` • ${product.size}` : '';
         const shopName = product.shop || 'RE:WEAR Select';
 
         const cardHtml = `
@@ -672,7 +711,7 @@
               <div class="card-shop">${shopName}</div>
               <div class="card-title">${product.title || 'Без названия'}</div>
               <div class="card-price">${priceVal} сум</div>
-              <div class="card-meta">${product.category || 'Без категории'}${sizeStr}</div>
+              <div class="card-meta">${product.category || 'Без категории'}</div>
             </div>
           </div>
         `;
@@ -966,7 +1005,6 @@
 function renderGallery(images) {
   const track = document.getElementById('m-gallery-track');
   const dotsEl = document.getElementById('m-gallery-dots');
-  const counterEl = document.getElementById('m-gallery-counter');
 
   track.innerHTML = '';
   dotsEl.innerHTML = '';
@@ -980,36 +1018,29 @@ function renderGallery(images) {
     dotsEl.innerHTML += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></div>`;
   });
 
-  // Счётчик и точки показываем только если фото больше 1
-  if (images.length > 1) {
-    counterEl.style.display = 'block';
-    dotsEl.style.display = 'flex';
-    counterEl.innerText = `1 / ${images.length}`;
-  } else {
-    counterEl.style.display = 'none';
-    dotsEl.style.display = 'none';
-  }
-
-  // Обновляем активную точку и счётчик при скролле
-  let scrollTimeout;
-  track.onscroll = () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const slideWidth = track.clientWidth;
-      const currentIndex = Math.round(track.scrollLeft / slideWidth);
-      updateGalleryUI(currentIndex, images.length);
-    }, 50);
-  };
+  // Точки показываем только если фото больше 1
+if (images.length > 1) {
+  dotsEl.style.display = 'flex';
+} else {
+  dotsEl.style.display = 'none';
 }
 
-function updateGalleryUI(index, total) {
+// Обновляем активную точку при скролле
+let scrollTimeout;
+track.onscroll = () => {
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    const slideWidth = track.clientWidth;
+    const currentIndex = Math.round(track.scrollLeft / slideWidth);
+    updateGalleryUI(currentIndex);
+  }, 50);
+};
+}
+
+function updateGalleryUI(index) {
   document.querySelectorAll('.gallery-dot').forEach((dot, i) => {
     dot.classList.toggle('active', i === index);
   });
-  const counterEl = document.getElementById('m-gallery-counter');
-  if (total > 1) {
-    counterEl.innerText = `${index + 1} / ${total}`;
-  }
 }
 
 function goToSlide(index) {
