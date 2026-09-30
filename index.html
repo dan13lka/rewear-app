@@ -644,6 +644,74 @@
 .btn-send-review:active,
 .btn-cancel-review:active { opacity: 0.85; }
 
+/* СВЯЗАТЬСЯ С НАМИ */
+.contact-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 24px 0 12px;
+}
+
+.contact-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-btn {
+  width: 100%;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+.contact-btn:active {
+  background: #1c1c1c;
+  border-color: #333;
+}
+
+.contact-btn-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.contact-btn-icon.tg-icon {
+  background: linear-gradient(135deg, #2AABEE 0%, #229ED9 100%);
+}
+.contact-btn-icon.ig-icon {
+  background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%);
+}
+
+.contact-btn-text {
+  flex: 1;
+  min-width: 0;
+}
+.contact-btn-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+.contact-btn-sub {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.contact-btn-arrow {
+  flex-shrink: 0;
+}    
   </style>
 </head>
 <body>
@@ -769,6 +837,40 @@
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
     <span>Отзывы</span>
+  </button>
+  <!-- СВЯЗАТЬСЯ С НАМИ -->
+<div class="contact-section-title">Связаться с нами</div>
+<div class="contact-buttons">
+  <button class="contact-btn" onclick="contactViaTelegram()">
+    <div class="contact-btn-icon tg-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+      </svg>
+    </div>
+    <div class="contact-btn-text">
+      <div class="contact-btn-label">Telegram</div>
+      <div class="contact-btn-sub">Написать нам в личку</div>
+    </div>
+    <svg class="contact-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <button class="contact-btn" onclick="contactViaInstagram()">
+    <div class="contact-btn-icon ig-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+      </svg>
+    </div>
+    <div class="contact-btn-text">
+      <div class="contact-btn-label">Instagram</div>
+      <div class="contact-btn-sub">@rewear__uz</div>
+    </div>
+    <svg class="contact-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
   </button>
   </div>
   <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
@@ -1672,6 +1774,41 @@ async function submitReview() {
     console.error('Ошибка отправки отзыва:', err);
     tg.showAlert('Не удалось отправить отзыв. Попробуйте ещё раз.');
   }
+}
+    // === СВЯЗАТЬСЯ С НАМИ ===
+function contactViaTelegram() {
+  const message = 'Здравствуйте! У меня вопрос по RE:WEAR:';
+  const url = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
+
+  if (tg && tg.openTelegramLink) {
+    tg.openTelegramLink(url);
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+function contactViaInstagram() {
+  const instaUrl = 'https://instagram.com/rewear__uz';
+  const message = 'Здравствуйте! У меня вопрос по RE:WEAR:';
+
+  // Пытаемся скопировать текст в буфер
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(message).catch(() => {});
+  }
+
+  // Открываем Instagram
+  if (tg && tg.openLink) {
+    tg.openLink(instaUrl);
+  } else {
+    window.open(instaUrl, '_blank');
+  }
+
+  // Через небольшую задержку показываем подсказку
+  setTimeout(() => {
+    if (tg && tg.showAlert) {
+      tg.showAlert('Открываем Instagram. Текст вопроса скопирован — просто вставьте его в сообщение.');
+    }
+  }, 300);
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
