@@ -5,50 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RE:WEAR</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Подключаем официальный клиент Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #0d0d0d; color: #ffffff; padding: 16px; padding-bottom: 80px; }
+    
     .header { text-align: center; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;}
     .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; }
     .logo span { color: #8c8c8c; }
     .slogan { font-size: 10px; color: #8c8c8c; letter-spacing: 1px; }
+    
     .banner { background: #1a1a1a; border-radius: 16px; padding: 20px; margin-bottom: 24px; border: 1px solid #2a2a2a; text-align: left;}
     .banner h2 { font-size: 20px; margin-bottom: 8px; font-weight: 700; }
     .banner p { font-size: 13px; color: #a0a0a0; margin-bottom: 16px; }
     .btn-main { background: #ffffff; color: #000000; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-block;}
-    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-    .card { background: #161616; border-radius: 12px; overflow: hidden; border: 1px solid #222222; text-decoration: none; color: inherit; display: block;}
+    .card { background: #161616; border-radius: 12px; overflow: hidden; border: 1px solid #222222; text-decoration: none; color: inherit; display: block; cursor: pointer;}
     .card-img { width: 100%; height: 160px; object-fit: cover; background: #222; display: block; }
     .card-info { padding: 10px; }
     .card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-price { font-size: 14px; font-weight: 700; }
     .card-meta { font-size: 11px; color: #8c8c8c; margin-top: 4px; }
+    
     .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d0d; border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 12px 0; z-index: 10;}
     .nav-item { color: #8c8c8c; font-size: 11px; text-decoration: none; text-align: center; cursor: pointer;}
     .nav-item.active { color: #ffffff; font-weight: 600; }
-    #loading { text-align: center; color: #8c8c8c; padding: 20px; font-size: 13px; word-break: break-all; }
+    #loading { text-align: center; color: #8c8c8c; padding: 20px; font-size: 13px; }
+
+    /* МОДАЛЬНОЕ ОКНО ТОВАРА */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0d0d0d; z-index: 100; overflow-y: auto; padding: 16px; padding-bottom: 90px; }
+    .modal-close { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.6); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 101; }
+    .modal-img { width: 100%; height: 320px; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
+    .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .modal-price { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
+    .modal-tags { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tag { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #a0a0a0; }
+    .modal-desc { font-size: 14px; color: #cccccc; line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
+    .btn-buy { position: fixed; bottom: 20px; left: 16px; right: 16px; background: #ffffff; color: #000; text-align: center; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 15px; text-decoration: none; box-shadow: 0 4px 20px rgba(255,255,255,0.15); z-index: 102; }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="logo"><span>RE:</span>WEAR</div>
-    <div class="slogan">ВИНТАЖ / Б/У / ОРИГИНАЛ</div>
+  <div id="main-view">
+    <div class="header">
+      <div class="logo"><span>RE:</span>WEAR</div>
+      <div class="slogan">ВИНТАЖ / Б/У / ОРИГИНАЛ</div>
+    </div>
+
+    <div class="banner">
+      <h2>Вещи, которые имеют историю.</h2>
+      <p>Лучшие вещи не стареют. Они просто ждут своего человека.</p>
+      <a href="#" class="btn-main">Перейти к каталогу &rarr;</a>
+    </div>
+
+    <div class="section-title">Популярные товары</div>
+
+    <div id="loading">Загрузка товаров...</div>
+    <div class="grid" id="catalog-grid" style="display: none;"></div>
   </div>
 
-  <div class="banner">
-    <h2>Вещи, которые имеют историю.</h2>
-    <p>Лучшие вещи не стареют. Они просто ждут своего человека.</p>
-    <a href="#" class="btn-main">Перейти к каталогу &rarr;</a>
+  <!-- Экран карточки товара -->
+  <div id="product-modal" class="modal">
+    <button class="modal-close" onclick="closeProduct()">✕</button>
+    <img id="m-img" class="modal-img" src="" alt="">
+    <div id="m-title" class="modal-title"></div>
+    <div id="m-price" class="modal-price"></div>
+    <div class="modal-tags">
+      <span id="m-category" class="tag"></span>
+      <span id="m-condition" class="tag"></span>
+    </div>
+    <div id="m-desc" class="modal-desc"></div>
+    <a id="m-buy-btn" href="#" target="_blank" class="btn-buy">Написать продавцу в Telegram</a>
   </div>
-
-  <div class="section-title">Популярные товары</div>
-
-  <div id="loading">Загрузка товаров...</div>
-  <div class="grid" id="catalog-grid" style="display: none;"></div>
 
   <div class="nav-bar">
     <div class="nav-item active">Главная</div>
@@ -61,56 +91,50 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Точные ключи из твоего проекта Supabase
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDA3MDA2MjMsImV4cCI6MjAxNjI3NjYyM30.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2M0_M_5R3-Xgg';
+
+    let loadedProducts = [];
 
     async function initAndLoad() {
       const loadingEl = document.getElementById('loading');
       const gridEl = document.getElementById('catalog-grid');
 
       try {
-        if (!window.supabase || !window.supabase.createClient) {
-          throw new Error("Библиотека Supabase не загрузилась. Проверьте интернет-соединение.");
-        }
-
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { data: products, error } = await client.from('products').select('*');
 
-        // Получаем все записи из таблицы products
-        const { data: products, error } = await client
-          .from('products')
-          .select('*');
-
-        if (error) {
-          throw new Error("Ошибка БД: " + error.message + " (" + (error.details || error.hint || "") + ")");
-        }
+        if (error) throw error;
 
         if (!products || products.length === 0) {
-          loadingEl.innerText = "В каталоге пока нет товаров (таблица 'products' пустая).";
+          loadingEl.innerText = "В каталоге пока нет товаров.";
           return;
         }
 
+        loadedProducts = products;
         gridEl.innerHTML = '';
         loadingEl.style.display = 'none';
         gridEl.style.display = 'grid';
 
-        products.forEach(product => {
+        products.forEach((product, index) => {
           let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
           if (product.image_urls) {
             imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
+            // очистка если случайно вставился формат массива как текст
+            imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
           }
 
           const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
 
           const cardHtml = `
-            <a href="#" class="card" onclick="openProduct('${product.title || 'Товар'}', '${priceVal}')">
+            <div class="card" onclick="openProduct(${index})">
               <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
               <div class="card-info">
                 <div class="card-title">${product.title || 'Без названия'}</div>
                 <div class="card-price">${priceVal} сум</div>
                 <div class="card-meta">${product.category || 'Ветровки'} • ${product.condition || '8/10'}</div>
               </div>
-            </a>
+            </div>
           `;
           gridEl.innerHTML += cardHtml;
         });
@@ -118,15 +142,40 @@
       } catch (err) {
         console.error(err);
         loadingEl.style.color = "#ff4d4d";
-        loadingEl.innerText = err.message;
+        loadingEl.innerText = "Ошибка загрузки: " + err.message;
       }
     }
 
-    function openProduct(title, price) {
-      tg.showAlert(`Товар: ${title}\nЦена: ${price} сум`);
+    function openProduct(index) {
+      const p = loadedProducts[index];
+      if (!p) return;
+
+      let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
+      if (p.image_urls) {
+        imageUrl = Array.isArray(p.image_urls) ? p.image_urls[0] : p.image_urls;
+        imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
+      }
+
+      document.getElementById('m-img').src = imageUrl;
+      document.getElementById('m-title').innerText = p.title || 'Без названия';
+      document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
+      document.getElementById('m-category').innerText = p.category || 'Категория';
+      document.getElementById('m-condition').innerText = 'Состояние: ' + (p.condition || '8/10');
+      document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
+      
+      // Ссылка на продавца (заменишь на свой username)
+      document.getElementById('m-buy-btn').href = 'https://t.me/твой_username';
+
+      document.getElementById('product-modal').style.display = 'block';
+      tg.BackButton.show();
+      tg.BackButton.onClick(closeProduct);
     }
 
-    // Запускаем при загрузке страницы
+    function closeProduct() {
+      document.getElementById('product-modal').style.display = 'none';
+      tg.BackButton.hide();
+    }
+
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
