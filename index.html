@@ -55,8 +55,20 @@
     .filter-group { margin-bottom: 14px; }
     .filter-label { font-size: 12px; font-weight: 600; color: #8c8c8c; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
     .filter-select { width: 100%; background: #1c1c1c; border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; outline: none; }
-    .price-range { display: flex; gap: 8px; }
-    .price-input { flex: 1; background: #1c1c1c; border: 1px solid #333; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px; outline: none; }
+   .price-range { display: flex; gap: 8px; width: 100%; }
+.price-input { 
+  flex: 1 1 0; 
+  min-width: 0; 
+  width: 100%;
+  background: #1c1c1c; 
+  border: 1px solid #333; 
+  border-radius: 10px; 
+  padding: 10px 12px; 
+  color: #fff; 
+  font-size: 13px; 
+  outline: none; 
+  box-sizing: border-box;
+}
     .filter-actions { display: flex; gap: 8px; margin-top: 16px; }
     .btn-apply-filter { flex: 2; background: #ffffff; color: #0d0d0d; border: none; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
     .btn-reset-filter { flex: 1; background: #222; color: #8c8c8c; border: 1px solid #333; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; }
