@@ -1923,6 +1923,21 @@
 }
 .shop-avatar { overflow: hidden; }
 .shop-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-upload-row { display: flex; align-items: center; gap: 14px; }
+.avatar-preview {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 100%);
+  color: #fff; font-size: 24px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+.avatar-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-upload-btn {
+  background: #1a1a1a; border: 1px solid #2a2a2a; color: #ffffff;
+  padding: 12px 18px; border-radius: 12px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.avatar-upload-btn:active { opacity: 0.85; }
 
 .shop-name {
   font-size: 22px;
@@ -2697,8 +2712,15 @@
   </div>
 
     <div class="form-group">
-    <label class="form-label">Ссылка на аватарку (URL картинки)</label>
-    <input type="text" id="sf-avatar" class="form-input" placeholder="https://...">
+    <label class="form-label">Аватарка магазина</label>
+    <div class="avatar-upload-row">
+      <div id="sf-avatar-preview" class="avatar-preview">?</div>
+      <label class="avatar-upload-btn">
+        Загрузить фото
+        <input type="file" id="sf-avatar-file" accept="image/*" style="display: none;" onchange="uploadShopAvatar(this)">
+      </label>
+    </div>
+    <input type="hidden" id="sf-avatar">
   </div>
 
   <div class="form-group">
@@ -5111,6 +5133,7 @@ function openShopForm() {
   document.getElementById('shop-form-title').innerText = 'Добавить магазин';
   document.getElementById('sf-name').value = '';
   document.getElementById('sf-avatar').value = '';
+  setAvatarPreview('');
   document.getElementById('sf-description').value = '';
   document.getElementById('sf-telegram').value = '';
   document.getElementById('sf-instagram').value = '';
@@ -5145,6 +5168,7 @@ async function editShop(id) {
     document.getElementById('shop-form-title').innerText = 'Редактировать магазин';
     document.getElementById('sf-name').value = s.name || '';
     document.getElementById('sf-avatar').value = s.avatar_url || '';
+    setAvatarPreview(s.avatar_url || '');
     document.getElementById('sf-description').value = s.description || '';
     document.getElementById('sf-telegram').value = s.telegram || '';
     document.getElementById('sf-instagram').value = s.instagram || '';
@@ -5160,6 +5184,60 @@ async function editShop(id) {
     console.error('Ошибка загрузки магазина:', err);
     tg.showAlert('Не удалось загрузить магазин');
   }
+}
+
+    // Показывает фото (или знак ?) в круге предпросмотра
+function setAvatarPreview(url) {
+  const el = document.getElementById('sf-avatar-preview');
+  if (!el) return;
+  if (url) {
+    el.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    el.appendChild(img);
+  } else {
+    el.innerHTML = '?';
+  }
+}
+
+// Загружает выбранный файл в Supabase Storage
+async function uploadShopAvatar(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  if (file.size > 3 * 1024 * 1024) {
+    tg.showAlert('Файл больше 3 МБ. Выберите поменьше.');
+    input.value = '';
+    return;
+  }
+
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `shop_${Date.now()}.${ext}`;
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: { headers: { 'x-admin-key': ADMIN_SECRET } }
+    });
+
+    const { error } = await client.storage
+      .from('avatars')
+      .upload(path, file, { contentType: file.type });
+
+    if (error) throw error;
+
+    const { data } = client.storage.from('avatars').getPublicUrl(path);
+
+    document.getElementById('sf-avatar').value = data.publicUrl;
+    setAvatarPreview(data.publicUrl);
+    tg.showAlert('Фото загружено. Нажмите «Сохранить», чтобы применить.');
+
+  } catch (err) {
+    console.error('Ошибка загрузки фото:', err);
+    tg.showAlert('Не удалось загрузить фото: ' + err.message);
+  }
+
+  input.value = '';
 }
 
 async function saveShop() {
