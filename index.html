@@ -87,8 +87,8 @@
     .card-info { padding: 10px; }
     .card-shop {
   display: inline-block;
-  background: #e5e5e5;
-  color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -265,8 +265,8 @@
     .modal-img { width: 100%; height: 320px; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
     .modal-shop {
   display: inline-block;
-  background: #e5e5e5;
-  color: #1a1a1a;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -278,7 +278,7 @@
   transition: background 0.15s;
 }
 .modal-shop:active {
-  background: #cccccc;
+  background: rgba(255, 255, 255, 0.25);
 }
     .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
     .modal-price { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
@@ -5146,7 +5146,16 @@ async function loadShopReviews(shopId) {
   // Заглушка — заполним в этапе 4
   document.getElementById('shop-reviews-empty').style.display = 'block';
 }
-    window.addEventListener('DOMContentLoaded', initAndLoad);
+  function openShopFromProduct() {
+  if (activeModalIndex === null) return;
+  const p = loadedProducts[activeModalIndex];
+  if (!p || !p.shop_id) {
+    tg.showAlert('Магазин не указан');
+    return;
+  }
+  closeProduct();
+  openShopScreen(p.shop_id);
+}  
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
