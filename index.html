@@ -1198,7 +1198,231 @@
   font-weight: 600;
   line-height: 1.35;
 }
-    
+   /* АДМИНКА */
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid #1a1a1a;
+}
+.admin-tabs::-webkit-scrollbar { display: none; }
+
+.admin-tab {
+  background: #161616;
+  border: 1px solid #222;
+  color: #8c8c8c;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-tab.active {
+  background: #ffffff;
+  color: #0d0d0d;
+  border-color: #ffffff;
+}
+
+.admin-tab-content {
+  display: none;
+  padding: 16px;
+  padding-bottom: 40px;
+}
+.admin-tab-content.active {
+  display: block;
+}
+
+.admin-add-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: opacity 0.15s;
+}
+.admin-add-btn:active { opacity: 0.85; }
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Карточка товара в админке */
+.admin-product-item {
+  display: flex;
+  gap: 12px;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 10px;
+  align-items: center;
+}
+
+.admin-product-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #222;
+  flex-shrink: 0;
+}
+
+.admin-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-product-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.admin-product-meta {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-product-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.admin-product-sold {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ff6b6b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.admin-product-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-action-btn {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #8c8c8c;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.admin-action-btn:active { transform: scale(0.95); }
+.admin-action-btn.edit { color: #6db8ff; border-color: #2a4a6a; }
+.admin-action-btn.delete { color: #ff6b6b; border-color: #5a2a2a; }
+.admin-action-btn.stock { color: #4ade80; border-color: #2a5a35; }
+.admin-action-btn.stock.sold { color: #ffcb47; border-color: #5a4a20; }
+
+/* ФОРМА ТОВАРА */
+.form-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 40px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  border-color: #4a4a4a;
+}
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #666;
+}
+.form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  margin-bottom: 40px;
+}
+
+.btn-form-cancel {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #8c8c8c;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-form-save {
+  flex: 2;
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-form-cancel:active,
+.btn-form-save:active { opacity: 0.85; } 
   </style>
 </head>
 <body>
@@ -1374,6 +1598,13 @@
   </svg>
   <span>Мои заказы</span>
 </button>
+  <button id="admin-btn" class="btn-open-reviews" onclick="openAdminScreen()" style="display: none;">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>
+  <span>Админ-панель</span>
+</button>
   <!-- СВЯЗАТЬСЯ С НАМИ -->
 <div class="contact-section-title">Связаться с нами</div>
 <div class="contact-buttons">
@@ -1500,6 +1731,121 @@
     </button>
   </div>
 </div>
+  <!-- ЭКРАН АДМИНКИ -->
+<div id="admin-screen" class="reviews-screen">
+  <div class="reviews-topbar">
+    <button class="reviews-back-btn" onclick="closeAdminScreen()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <div class="reviews-topbar-title">Админ-панель</div>
+    <div style="width: 22px;"></div>
+  </div>
+
+  <!-- Табы разделов -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchAdminTab('products', this)">Товары</button>
+    <button class="admin-tab" onclick="switchAdminTab('orders', this)">Заказы</button>
+    <button class="admin-tab" onclick="switchAdminTab('reviews', this)">Отзывы</button>
+    <button class="admin-tab" onclick="switchAdminTab('promo', this)">Промокоды</button>
+  </div>
+
+  <!-- Раздел: ТОВАРЫ -->
+  <div id="admin-tab-products" class="admin-tab-content active">
+    <button class="admin-add-btn" onclick="openProductForm()">+ Добавить товар</button>
+    <div id="admin-products-list" class="admin-list"></div>
+    <div id="admin-products-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+      Товаров пока нет
+    </div>
+  </div>
+
+  <!-- Раздел: ЗАКАЗЫ -->
+  <div id="admin-tab-orders" class="admin-tab-content">
+    <div id="admin-orders-list" class="admin-list"></div>
+    <div id="admin-orders-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+      Заказов пока нет
+    </div>
+  </div>
+
+  <!-- Раздел: ОТЗЫВЫ -->
+  <div id="admin-tab-reviews" class="admin-tab-content">
+    <div id="admin-reviews-list" class="admin-list"></div>
+    <div id="admin-reviews-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+      Отзывов на модерации нет
+    </div>
+  </div>
+
+  <!-- Раздел: ПРОМОКОДЫ -->
+  <div id="admin-tab-promo" class="admin-tab-content">
+    <button class="admin-add-btn" onclick="openPromoForm()">+ Создать промокод</button>
+    <div id="admin-promo-list" class="admin-list"></div>
+    <div id="admin-promo-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+      Промокодов пока нет
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛКА ФОРМЫ ТОВАРА -->
+<div id="product-form-modal" class="modal">
+  <button class="modal-close" onclick="closeProductForm()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+
+  <div id="product-form-title" class="form-title">Добавить товар</div>
+
+  <div class="form-group">
+    <label class="form-label">Название *</label>
+    <input type="text" id="pf-title" class="form-input" placeholder="Например: Худи Nike">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Цена (сум) *</label>
+    <input type="number" id="pf-price" class="form-input" placeholder="450000">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Категория</label>
+    <input type="text" id="pf-category" class="form-input" placeholder="Худи, Футболки, Ветровки...">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Магазин</label>
+    <input type="text" id="pf-shop" class="form-input" placeholder="Название магазина">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Размеры (через запятую)</label>
+    <input type="text" id="pf-sizes" class="form-input" placeholder="S, M, L, XL">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">URL фото (несколько через запятую)</label>
+    <textarea id="pf-images" class="form-textarea" placeholder="https://..., https://..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Описание</label>
+    <textarea id="pf-description" class="form-textarea" placeholder="Короткое описание товара"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Статус</label>
+    <select id="pf-instock" class="form-select">
+      <option value="true">В наличии</option>
+      <option value="false">Продано</option>
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-form-cancel" onclick="closeProductForm()">Отмена</button>
+    <button class="btn-form-save" onclick="saveProduct()">Сохранить</button>
+  </div>
+</div>
 <!-- ПАНЕЛЬ ВВОДА ОТЗЫВА (снизу) -->
 <div id="review-input-bar" class="review-input-bar">
   <button class="review-input-btn" onclick="openReviewComposer()">
@@ -1564,7 +1910,8 @@
 
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
-    const ADMIN_USERNAME = 'KYJITYPA'; // Твой Telegram юзернейм
+    const ADMIN_USERNAME = 'KYJITYPA'; 
+    const ADMIN_TG_ID = 6244774379;
 
     let loadedProducts = [];
     let selectedCategory = 'все';
@@ -1583,10 +1930,16 @@
 }
 
     async function initAndLoad() {
-      if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         const user = tg.initDataUnsafe.user;
         document.getElementById('user-name').innerText = (user.first_name || '') + ' ' + (user.last_name || '');
         document.getElementById('user-handle').innerText = user.username ? '@' + user.username : 'Telegram User';
+
+        // Показываем кнопку админки только админу
+        if (user.id === ADMIN_TG_ID) {
+          const adminBtn = document.getElementById('admin-btn');
+          if (adminBtn) adminBtn.style.display = 'flex';
+        }
       }
 
       updateCartBadge();
@@ -2867,6 +3220,321 @@ function showToast(message) {
   toastTimeout = setTimeout(() => {
     toastEl.classList.remove('show');
   }, 2500);
+}
+    // === АДМИНКА ===
+let editingProductId = null;
+
+function openAdminScreen() {
+  document.getElementById('admin-screen').classList.add('active');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeAdminScreen);
+  switchAdminTab('products', document.querySelector('.admin-tab'));
+}
+
+function closeAdminScreen() {
+  document.getElementById('admin-screen').classList.remove('active');
+  tg.BackButton.hide();
+}
+
+function switchAdminTab(tabName, element) {
+  document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
+
+  if (element) element.classList.add('active');
+  document.getElementById('admin-tab-' + tabName).classList.add('active');
+
+  if (tabName === 'products') loadAdminProducts();
+  if (tabName === 'orders') loadAdminOrders();
+  if (tabName === 'reviews') loadAdminReviews();
+  if (tabName === 'promo') loadAdminPromo();
+}
+
+// === ТОВАРЫ В АДМИНКЕ ===
+async function loadAdminProducts() {
+  const listEl = document.getElementById('admin-products-list');
+  const emptyEl = document.getElementById('admin-products-empty');
+
+  listEl.innerHTML = '';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: products, error } = await client
+      .from('products')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+
+    if (!products || products.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+
+    products.forEach(p => {
+      let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=200';
+      if (p.image_urls) {
+        const arr = Array.isArray(p.image_urls) ? p.image_urls : [p.image_urls];
+        if (arr[0]) imgUrl = String(arr[0]).replace(/[\{\}\"\']/g, '').trim();
+      }
+
+      const isSold = p.in_stock === false;
+      const stockBtnClass = isSold ? 'admin-action-btn stock sold' : 'admin-action-btn stock';
+      const stockBtnText = isSold ? 'Вернуть' : 'Продано';
+
+      listEl.innerHTML += `
+        <div class="admin-product-item">
+          <img class="admin-product-img" src="${imgUrl}" alt="">
+          <div class="admin-product-info">
+            <div class="admin-product-title">${escapeHtml(p.title || 'Без названия')}</div>
+            <div class="admin-product-meta">${escapeHtml(p.category || '')} ${p.shop ? '· ' + escapeHtml(p.shop) : ''}</div>
+            <div class="admin-product-price">${Number(p.price || 0).toLocaleString('ru-RU')} сум</div>
+            ${isSold ? '<div class="admin-product-sold">ПРОДАНО</div>' : ''}
+          </div>
+          <div class="admin-product-actions">
+            <button class="admin-action-btn edit" onclick="editProduct(${p.id})">Ред.</button>
+            <button class="${stockBtnClass}" onclick="toggleProductStock(${p.id})">${stockBtnText}</button>
+            <button class="admin-action-btn delete" onclick="deleteProduct(${p.id})">Удал.</button>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки товаров в админке:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Ошибка загрузки: ' + err.message;
+  }
+}
+
+function openProductForm() {
+  editingProductId = null;
+  document.getElementById('product-form-title').innerText = 'Добавить товар';
+  document.getElementById('pf-title').value = '';
+  document.getElementById('pf-price').value = '';
+  document.getElementById('pf-category').value = '';
+  document.getElementById('pf-shop').value = '';
+  document.getElementById('pf-sizes').value = '';
+  document.getElementById('pf-images').value = '';
+  document.getElementById('pf-description').value = '';
+  document.getElementById('pf-instock').value = 'true';
+
+  document.getElementById('product-form-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeProductForm);
+}
+
+function closeProductForm() {
+  document.getElementById('product-form-modal').style.display = 'none';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeAdminScreen);
+}
+
+async function editProduct(id) {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: p, error } = await client
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!p) return;
+
+    editingProductId = id;
+    document.getElementById('product-form-title').innerText = 'Редактировать товар';
+    document.getElementById('pf-title').value = p.title || '';
+    document.getElementById('pf-price').value = p.price || '';
+    document.getElementById('pf-category').value = p.category || '';
+    document.getElementById('pf-shop').value = p.shop || '';
+    
+    // Размеры
+    let sizesStr = '';
+    if (Array.isArray(p.sizes)) {
+      sizesStr = p.sizes.map(s => String(s).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean).join(', ');
+    } else if (typeof p.sizes === 'string') {
+      sizesStr = p.sizes.replace(/[\{\}\"\']/g, '').trim();
+    }
+    document.getElementById('pf-sizes').value = sizesStr;
+
+    // Фото
+    let imagesStr = '';
+    if (Array.isArray(p.image_urls)) {
+      imagesStr = p.image_urls.map(u => String(u).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean).join(', ');
+    } else if (typeof p.image_urls === 'string') {
+      imagesStr = p.image_urls.replace(/[\{\}\"\']/g, '').trim();
+    }
+    document.getElementById('pf-images').value = imagesStr;
+
+    document.getElementById('pf-description').value = p.description || '';
+    document.getElementById('pf-instock').value = p.in_stock === false ? 'false' : 'true';
+
+    document.getElementById('product-form-modal').style.display = 'block';
+    tg.BackButton.show();
+    tg.BackButton.onClick(closeProductForm);
+
+  } catch (err) {
+    console.error('Ошибка загрузки товара:', err);
+    tg.showAlert('Не удалось загрузить товар');
+  }
+}
+
+async function saveProduct() {
+  const title = document.getElementById('pf-title').value.trim();
+  const price = Number(document.getElementById('pf-price').value.trim());
+  const category = document.getElementById('pf-category').value.trim();
+  const shop = document.getElementById('pf-shop').value.trim();
+  const sizesStr = document.getElementById('pf-sizes').value.trim();
+  const imagesStr = document.getElementById('pf-images').value.trim();
+  const description = document.getElementById('pf-description').value.trim();
+  const inStock = document.getElementById('pf-instock').value === 'true';
+
+  if (!title) {
+    tg.showAlert('Введите название');
+    return;
+  }
+  if (!price || price <= 0) {
+    tg.showAlert('Введите корректную цену');
+    return;
+  }
+
+  // Размеры → массив
+  const sizesArr = sizesStr
+    ? sizesStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+    : [];
+
+  // Фото → массив
+  const imagesArr = imagesStr
+    ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const productData = {
+    title,
+    price,
+    category,
+    shop,
+    sizes: sizesArr,
+    image_urls: imagesArr,
+    description,
+    in_stock: inStock
+  };
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    if (editingProductId) {
+      const { error } = await client
+        .from('products')
+        .update(productData)
+        .eq('id', editingProductId);
+      if (error) throw error;
+      tg.showAlert('Товар обновлён');
+    } else {
+      const { error } = await client
+        .from('products')
+        .insert(productData);
+      if (error) throw error;
+      tg.showAlert('Товар добавлен');
+    }
+
+    closeProductForm();
+    loadAdminProducts();
+
+    // Обновляем каталог
+    const { data: allProducts } = await client.from('products').select('*');
+    if (allProducts) {
+      loadedProducts = allProducts;
+      populateShopFilter(loadedProducts);
+      renderProducts(loadedProducts);
+    }
+
+  } catch (err) {
+    console.error('Ошибка сохранения товара:', err);
+    tg.showAlert('Не удалось сохранить: ' + err.message);
+  }
+}
+
+async function deleteProduct(id) {
+  tg.showConfirm('Удалить товар?', async (confirmed) => {
+    if (!confirmed) return;
+
+    try {
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { error } = await client
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      tg.showAlert('Товар удалён');
+      loadAdminProducts();
+
+      // Обновляем каталог
+      const { data: allProducts } = await client.from('products').select('*');
+      if (allProducts) {
+        loadedProducts = allProducts;
+        populateShopFilter(loadedProducts);
+        renderProducts(loadedProducts);
+      }
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+      tg.showAlert('Не удалось удалить');
+    }
+  });
+}
+
+async function toggleProductStock(id) {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Получаем текущий статус
+    const { data: p, error: fetchError } = await client
+      .from('products')
+      .select('in_stock')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newStock = p.in_stock === false ? true : false;
+
+    const { error } = await client
+      .from('products')
+      .update({ in_stock: newStock })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    loadAdminProducts();
+
+    // Обновляем каталог
+    const { data: allProducts } = await client.from('products').select('*');
+    if (allProducts) {
+      loadedProducts = allProducts;
+      populateShopFilter(loadedProducts);
+      renderProducts(loadedProducts);
+    }
+  } catch (err) {
+    console.error('Ошибка смены статуса:', err);
+    tg.showAlert('Не удалось изменить статус');
+  }
+}
+
+// Заглушки для остальных разделов (заполним позже)
+function loadAdminOrders() {
+  document.getElementById('admin-orders-empty').style.display = 'block';
+}
+function loadAdminReviews() {
+  document.getElementById('admin-reviews-empty').style.display = 'block';
+}
+function loadAdminPromo() {
+  document.getElementById('admin-promo-empty').style.display = 'block';
+}
+function openPromoForm() {
+  tg.showAlert('Раздел "Промокоды" — в разработке');
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
