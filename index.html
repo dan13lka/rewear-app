@@ -1250,6 +1250,7 @@
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
     let cartSizes = JSON.parse(localStorage.getItem('rewear_cart_sizes') || '{}');
     let activeModalIndex = null;
+    let appliedPromo = null; // { code, discount_amount }
 
    function saveState() {
   localStorage.setItem('rewear_favs', JSON.stringify(favorites));
@@ -1585,7 +1586,7 @@ function toggleFav(e, id) {
   }
 }
 
-    function renderCart() {
+  function renderCart() {
   const listEl = document.getElementById('cart-list');
   const emptyEl = document.getElementById('cart-empty');
   const checkoutBar = document.getElementById('cart-checkout-bar');
