@@ -1810,7 +1810,7 @@ function toggleFav(e, id) {
   }
 }
 
-   async function checkoutCart() {
+  async function checkoutCart() {
   const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
   if (cartProducts.length === 0) return;
 
@@ -1837,10 +1837,6 @@ function toggleFav(e, id) {
   const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
   const buyerUsername = user.username || '';
       
-  // 1. Сохраняем заказ в Supabase
-  let orderId = null;
-  try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         // Учитываем скидку
     let finalTotal = total;
     let promoCode = null;
@@ -1850,6 +1846,10 @@ function toggleFav(e, id) {
       finalTotal = Math.max(0, total - promoDiscount);
       promoCode = appliedPromo.code;
     }
+      // 1. Сохраняем заказ в Supabase
+  let orderId = null;
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const { data, error } = await client.from('orders').insert({
       buyer_tg_id: user.id || null,
