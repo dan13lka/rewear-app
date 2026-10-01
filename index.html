@@ -2118,7 +2118,13 @@
         renderProducts(loadedProducts);
         loadBanners();
 
-     
+      } catch (err) {
+        console.error(err);
+        loadingEl.style.color = "#ff4d4d";
+        loadingEl.innerText = "Ошибка загрузки: " + err.message;
+      }
+    }
+
     // Автоматически заполняем список шопов в фильтре на основе загруженных товаров
     function populateShopFilter(products) {
       const shopSelect = document.getElementById('filter-shop');
