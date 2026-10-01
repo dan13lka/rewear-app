@@ -1764,6 +1764,92 @@
   color: #ff6b6b;
   border-color: rgba(255, 107, 107, 0.3);
 }
+/* МАГАЗИНЫ В АДМИНКЕ */
+.admin-shop-card {
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.admin-shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.admin-shop-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.admin-shop-desc {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.admin-shop-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.admin-shop-status.active {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+.admin-shop-status.inactive {
+  background: rgba(140, 140, 140, 0.15);
+  color: #8c8c8c;
+}
+
+.admin-shop-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #222;
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.admin-shop-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-shop-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: #1a1a1a;
+  transition: all 0.15s;
+}
+.admin-shop-actions button:active { transform: scale(0.97); }
+
+.admin-shop-actions .btn-edit {
+  color: #6db8ff;
+  border-color: rgba(109, 184, 255, 0.3);
+}
+.admin-shop-actions .btn-del {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.3);
+}
     
   </style>
 </head>
@@ -2087,9 +2173,11 @@
   </div>
 
   <!-- Табы разделов -->
+    <!-- Табы разделов -->
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="switchAdminTab('products', this)">Товары</button>
     <button class="admin-tab" onclick="switchAdminTab('orders', this)">Заказы</button>
+    <button class="admin-tab" onclick="switchAdminTab('shops', this)">Магазины</button>
     <button class="admin-tab" onclick="switchAdminTab('reviews', this)">Отзывы</button>
     <button class="admin-tab" onclick="switchAdminTab('promo', this)">Промокоды</button>
   </div>
@@ -2108,6 +2196,14 @@
     <div id="admin-orders-list" class="admin-list"></div>
     <div id="admin-orders-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
       Заказов пока нет
+    </div>
+  </div>
+    <!-- Раздел: МАГАЗИНЫ -->
+  <div id="admin-tab-shops" class="admin-tab-content">
+    <button class="admin-add-btn" onclick="openShopForm()">+ Добавить магазин</button>
+    <div id="admin-shops-list" class="admin-list"></div>
+    <div id="admin-shops-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+      Магазинов пока нет
     </div>
   </div>
 
@@ -2188,6 +2284,60 @@
     <button class="btn-form-save" onclick="saveProduct()">Сохранить</button>
   </div>
 </div>
+  <!-- МОДАЛКА ФОРМЫ МАГАЗИНА -->
+<div id="shop-form-modal" class="modal">
+  <button class="modal-close" onclick="closeShopForm()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+
+  <div id="shop-form-title" class="form-title">Добавить магазин</div>
+
+  <div class="form-group">
+    <label class="form-label">Название магазина *</label>
+    <input type="text" id="sf-name" class="form-input" placeholder="Например: Street Store">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Описание</label>
+    <textarea id="sf-description" class="form-textarea" placeholder="Ресейл, винтаж, стритвир. Ташкент."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Telegram (без @)</label>
+    <input type="text" id="sf-telegram" class="form-input" placeholder="street_store_uz">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Instagram (без @)</label>
+    <input type="text" id="sf-instagram" class="form-input" placeholder="street_store">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Телефон</label>
+    <input type="text" id="sf-phone" class="form-input" placeholder="+998 90 123 45 67">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Порядок отображения (меньше = выше)</label>
+    <input type="number" id="sf-display-order" class="form-input" value="0">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Статус</label>
+    <select id="sf-active" class="form-select">
+      <option value="true">Активен</option>
+      <option value="false">Отключён</option>
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-form-cancel" onclick="closeShopForm()">Отмена</button>
+    <button class="btn-form-save" onclick="saveShop()">Сохранить</button>
+  </div>
+</div>
   <!-- МОДАЛКА ФОРМЫ ПРОМОКОДА -->
 <div id="promo-form-modal" class="modal">
   <button class="modal-close" onclick="closePromoForm()">
@@ -2199,9 +2349,11 @@
 
   <div id="promo-form-title" class="form-title">Создать промокод</div>
 
-  <div class="form-group">
-    <label class="form-label">Код промокода *</label>
-    <input type="text" id="promo-f-code" class="form-input" placeholder="Например: REWEAR30" style="text-transform: uppercase;">
+    <div class="form-group">
+    <label class="form-label">Магазин</label>
+    <select id="pf-shop-id" class="form-select">
+      <option value="">— Не выбран —</option>
+    </select>
   </div>
 
   <div class="form-group">
@@ -2345,6 +2497,8 @@
         }
 
         loadedProducts = products;
+        // Обогащаем товары названием магазина (для отображения)
+        await enrichProductsWithShopNames();
         populateShopFilter(loadedProducts);
         renderProducts(loadedProducts);
         loadBanners();
@@ -2366,6 +2520,30 @@
           shops.add(p.shop.trim());
         }
       });
+      // Обогащаем товары названием магазина (для отображения)
+async function enrichProductsWithShopNames() {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: shops } = await client
+      .from('shops')
+      .select('id, name');
+
+    if (!shops) return;
+
+    const shopsMap = {};
+    shops.forEach(s => { shopsMap[s.id] = s.name; });
+
+    loadedProducts.forEach(p => {
+      if (p.shop_id && shopsMap[p.shop_id]) {
+        p.shop = shopsMap[p.shop_id];
+      } else if (!p.shop) {
+        p.shop = 'RE:WEAR Select';
+      }
+    });
+  } catch (err) {
+    console.error('Ошибка обогащения товаров:', err);
+  }
+}
 
       shopSelect.innerHTML = '<option value="all">Все магазины</option>';
       shops.forEach(shopName => {
@@ -3632,6 +3810,7 @@ function switchAdminTab(tabName, element) {
 
   if (tabName === 'products') loadAdminProducts();
   if (tabName === 'orders') loadAdminOrders();
+  if (tabName === 'shops') loadAdminShops();
   if (tabName === 'reviews') loadAdminReviews();
   if (tabName === 'promo') loadAdminPromo();
 }
@@ -3695,17 +3874,20 @@ async function loadAdminProducts() {
   }
 }
 
-function openProductForm() {
+async function openProductForm() {
   editingProductId = null;
   document.getElementById('product-form-title').innerText = 'Добавить товар';
   document.getElementById('pf-title').value = '';
   document.getElementById('pf-price').value = '';
   document.getElementById('pf-category').value = '';
-  document.getElementById('pf-shop').value = '';
   document.getElementById('pf-sizes').value = '';
   document.getElementById('pf-images').value = '';
   document.getElementById('pf-description').value = '';
   document.getElementById('pf-instock').value = 'true';
+
+  // Загружаем магазины в dropdown
+  await populateShopDropdown();
+  document.getElementById('pf-shop-id').value = '';
 
   document.getElementById('product-form-modal').style.display = 'block';
   tg.BackButton.show();
@@ -3730,12 +3912,16 @@ async function editProduct(id) {
     if (error) throw error;
     if (!p) return;
 
-    editingProductId = id;
+       editingProductId = id;
     document.getElementById('product-form-title').innerText = 'Редактировать товар';
+
+    // Сначала загружаем магазины в dropdown
+    await populateShopDropdown();
+
     document.getElementById('pf-title').value = p.title || '';
     document.getElementById('pf-price').value = p.price || '';
     document.getElementById('pf-category').value = p.category || '';
-    document.getElementById('pf-shop').value = p.shop || '';
+    document.getElementById('pf-shop-id').value = p.shop_id || '';
     
     // Размеры
     let sizesStr = '';
@@ -3772,7 +3958,8 @@ async function saveProduct() {
   const title = document.getElementById('pf-title').value.trim();
   const price = Number(document.getElementById('pf-price').value.trim());
   const category = document.getElementById('pf-category').value.trim();
-  const shop = document.getElementById('pf-shop').value.trim();
+  const shopIdRaw = document.getElementById('pf-shop-id').value;
+  const shopId = shopIdRaw ? Number(shopIdRaw) : null;
   const sizesStr = document.getElementById('pf-sizes').value.trim();
   const imagesStr = document.getElementById('pf-images').value.trim();
   const description = document.getElementById('pf-description').value.trim();
@@ -3797,11 +3984,11 @@ async function saveProduct() {
     ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
-  const productData = {
+   const productData = {
     title,
     price,
     category,
-    shop,
+    shop_id: shopId,
     sizes: sizesArr,
     image_urls: imagesArr,
     description,
@@ -4374,6 +4561,238 @@ async function deletePromo(id) {
       tg.showAlert('Не удалось удалить');
     }
   });
+}
+    // === МАГАЗИНЫ В АДМИНКЕ ===
+let editingShopId = null;
+
+async function loadAdminShops() {
+  const listEl = document.getElementById('admin-shops-list');
+  const emptyEl = document.getElementById('admin-shops-empty');
+
+  listEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: shops, error } = await client
+      .from('shops')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    if (!shops || shops.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    shops.forEach(s => {
+      const isActive = s.is_active !== false;
+      const statusClass = isActive ? 'active' : 'inactive';
+      const statusText = isActive ? 'Активен' : 'Отключён';
+
+      let contactsHtml = '';
+      if (s.telegram) contactsHtml += `<div>Telegram: @${escapeHtml(s.telegram)}</div>`;
+      if (s.instagram) contactsHtml += `<div>Instagram: @${escapeHtml(s.instagram)}</div>`;
+      if (s.phone) contactsHtml += `<div>Телефон: ${escapeHtml(s.phone)}</div>`;
+      if (!contactsHtml) contactsHtml = '<div>Контакты не указаны</div>';
+
+      listEl.innerHTML += `
+        <div class="admin-shop-card">
+          <div class="admin-shop-header">
+            <div class="admin-shop-name">${escapeHtml(s.name)}</div>
+            <div class="admin-shop-status ${statusClass}">${statusText}</div>
+          </div>
+          ${s.description ? `<div class="admin-shop-desc">${escapeHtml(s.description)}</div>` : ''}
+          <div class="admin-shop-contacts">${contactsHtml}</div>
+          <div class="admin-shop-actions">
+            <button class="btn-edit" onclick="editShop(${s.id})">Редактировать</button>
+            <button class="btn-del" onclick="deleteShop(${s.id})">Удалить</button>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки магазинов:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Ошибка загрузки: ' + err.message;
+  }
+}
+
+function openShopForm() {
+  editingShopId = null;
+  document.getElementById('shop-form-title').innerText = 'Добавить магазин';
+  document.getElementById('sf-name').value = '';
+  document.getElementById('sf-description').value = '';
+  document.getElementById('sf-telegram').value = '';
+  document.getElementById('sf-instagram').value = '';
+  document.getElementById('sf-phone').value = '';
+  document.getElementById('sf-display-order').value = '0';
+  document.getElementById('sf-active').value = 'true';
+
+  document.getElementById('shop-form-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeShopForm);
+}
+
+function closeShopForm() {
+  document.getElementById('shop-form-modal').style.display = 'none';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeAdminScreen);
+}
+
+async function editShop(id) {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: s, error } = await client
+      .from('shops')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!s) return;
+
+    editingShopId = id;
+    document.getElementById('shop-form-title').innerText = 'Редактировать магазин';
+    document.getElementById('sf-name').value = s.name || '';
+    document.getElementById('sf-description').value = s.description || '';
+    document.getElementById('sf-telegram').value = s.telegram || '';
+    document.getElementById('sf-instagram').value = s.instagram || '';
+    document.getElementById('sf-phone').value = s.phone || '';
+    document.getElementById('sf-display-order').value = s.display_order || 0;
+    document.getElementById('sf-active').value = s.is_active === false ? 'false' : 'true';
+
+    document.getElementById('shop-form-modal').style.display = 'block';
+    tg.BackButton.show();
+    tg.BackButton.onClick(closeShopForm);
+
+  } catch (err) {
+    console.error('Ошибка загрузки магазина:', err);
+    tg.showAlert('Не удалось загрузить магазин');
+  }
+}
+
+async function saveShop() {
+  const name = document.getElementById('sf-name').value.trim();
+  const description = document.getElementById('sf-description').value.trim();
+  const telegram = document.getElementById('sf-telegram').value.trim().replace('@', '');
+  const instagram = document.getElementById('sf-instagram').value.trim().replace('@', '');
+  const phone = document.getElementById('sf-phone').value.trim();
+  const displayOrder = Number(document.getElementById('sf-display-order').value) || 0;
+  const isActive = document.getElementById('sf-active').value === 'true';
+
+  if (!name) {
+    tg.showAlert('Введите название магазина');
+    return;
+  }
+
+  const shopData = {
+    name,
+    description,
+    telegram,
+    instagram,
+    phone,
+    display_order: displayOrder,
+    is_active: isActive
+  };
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: {
+        headers: {
+          'x-admin-key': ADMIN_SECRET
+        }
+      }
+    });
+
+    if (editingShopId) {
+      const { error } = await client
+        .from('shops')
+        .update(shopData)
+        .eq('id', editingShopId);
+      if (error) throw error;
+      tg.showAlert('Магазин обновлён');
+    } else {
+      const { error } = await client
+        .from('shops')
+        .insert(shopData);
+      if (error) {
+        if (error.code === '23505') {
+          tg.showAlert('Магазин с таким названием уже существует');
+          return;
+        }
+        throw error;
+      }
+      tg.showAlert('Магазин создан');
+    }
+
+    closeShopForm();
+    loadAdminShops();
+
+  } catch (err) {
+    console.error('Ошибка сохранения магазина:', err);
+    tg.showAlert('Не удалось сохранить: ' + err.message);
+  }
+}
+
+async function deleteShop(id) {
+  tg.showConfirm('Удалить магазин? Товары магазина останутся, но потеряют привязку.', async (confirmed) => {
+    if (!confirmed) return;
+
+    try {
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        global: {
+          headers: {
+            'x-admin-key': ADMIN_SECRET
+          }
+        }
+      });
+
+      const { error } = await client
+        .from('shops')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      tg.showAlert('Магазин удалён');
+      loadAdminShops();
+
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+      tg.showAlert('Не удалось удалить');
+    }
+  });
+}
+
+// Загружаем список магазинов в dropdown формы товара
+async function populateShopDropdown() {
+  const select = document.getElementById('pf-shop-id');
+  if (!select) return;
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: shops, error } = await client
+      .from('shops')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    select.innerHTML = '<option value="">— Не выбран —</option>';
+    if (shops) {
+      shops.forEach(s => {
+        select.innerHTML += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
+      });
+    }
+  } catch (err) {
+    console.error('Ошибка загрузки магазинов в dropdown:', err);
+  }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
