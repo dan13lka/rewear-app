@@ -864,29 +864,62 @@
 .promo-apply-btn:active { opacity: 0.85; }
 
 .promo-success {
-  background: #1a3d24;
-  border: 1px solid #2a5a35;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.25);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 14px;
+  font-size: 13px;
   color: #4ade80;
-  font-weight: 600;
+}
+
+.promo-success-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.promo-success-left svg {
+  flex-shrink: 0;
+}
+
+.promo-success-left span {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.promo-success-left strong {
+  font-weight: 700;
+  color: #6ee7a5;
+  letter-spacing: 0.3px;
 }
 
 .promo-remove-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   border: none;
-  color: #ff6b6b;
-  font-size: 13px;
-  font-weight: 700;
+  color: #8c8c8c;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   cursor: pointer;
-  padding: 4px 8px;
-  text-decoration: underline;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.promo-remove-btn:active {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+  transform: scale(0.9);
 }
 
 .promo-error {
@@ -1008,9 +1041,19 @@
         <button class="promo-apply-btn" onclick="applyPromo()">Применить</button>
       </div>
       <div id="promo-success" class="promo-success" style="display: none;">
-        <span id="promo-success-text"></span>
-        <button class="promo-remove-btn" onclick="removePromo()">Убрать</button>
-      </div>
+  <div class="promo-success-left">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="promo-success-text"></span>
+  </div>
+  <button class="promo-remove-btn" onclick="removePromo()" aria-label="Убрать">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+</div>
       <div id="promo-error" class="promo-error" style="display: none;"></div>
     </div>
 
@@ -2342,8 +2385,8 @@ async function applyPromo() {
       discount_amount: Number(promo.discount_amount)
     };
 
-    document.getElementById('promo-success-text').innerText =
-      `✅ Промокод ${promo.code}: -${Number(promo.discount_amount).toLocaleString('ru-RU')} сум`;
+    document.getElementById('promo-success-text').innerHTML =
+      `<strong>${promo.code}</strong> · −${Number(promo.discount_amount).toLocaleString('ru-RU')} сум`;
     inputWrapper.style.display = 'none';
     successEl.style.display = 'flex';
 
