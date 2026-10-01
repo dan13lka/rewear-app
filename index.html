@@ -2118,13 +2118,7 @@
         renderProducts(loadedProducts);
         loadBanners();
 
-      } catch (err) {
-        console.error(err);
-        loadingEl.style.color = "#ff4d4d";
-        loadingEl.innerText = "Ошибка загрузки: " + err.message;
-      }
-    }
-
+     
     // Автоматически заполняем список шопов в фильтре на основе загруженных товаров
     function populateShopFilter(products) {
       const shopSelect = document.getElementById('filter-shop');
@@ -3811,11 +3805,13 @@ async function loadAdminOrders() {
       `;
     });
 
-  } catch (err) {
+   } catch (err) {
     console.error('Ошибка загрузки заказов:', err);
     emptyEl.style.display = 'block';
     emptyEl.innerText = 'Ошибка загрузки: ' + err.message;
   }
+}
+
 function loadAdminReviews() {
   document.getElementById('admin-reviews-empty').style.display = 'block';
 }
