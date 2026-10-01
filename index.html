@@ -2526,8 +2526,6 @@
     <div class="reviews-topbar-title">Админ-панель</div>
     <div style="width: 22px;"></div>
   </div>
-
-  <!-- Табы разделов -->
     <!-- Табы разделов -->
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="switchAdminTab('products', this)">Товары</button>
@@ -2686,19 +2684,18 @@
     <input type="text" id="sf-phone" class="form-input" placeholder="+998 90 123 45 67">
   </div>
 
-  <div class="form-group">
+    <div class="form-group">
     <label class="form-label">Порядок отображения (меньше = выше)</label>
     <input type="number" id="sf-display-order" class="form-input" value="0">
   </div>
 
-  <label class="form-label">Магазин</label>
+  <div class="form-group">
     <label class="form-label">Статус</label>
     <select id="sf-active" class="form-select">
       <option value="true">Активен</option>
       <option value="false">Отключён</option>
     </select>
   </div>
-
   <div class="form-actions">
     <button class="btn-form-cancel" onclick="closeShopForm()">Отмена</button>
     <button class="btn-form-save" onclick="saveShop()">Сохранить</button>
@@ -2713,18 +2710,21 @@
     </svg>
   </button>
 
-  <div id="promo-form-title" class="form-title">Создать промокод</div>
+    <div id="promo-form-title" class="form-title">Создать промокод</div>
 
-    <label class="form-label">Магазин</label>
-    <label class="form-label">Магазин</label>
-    <select id="pf-shop-id" class="form-select">
-      <option value="">— Не выбран —</option>
-    </select>
+  <div class="form-group">
+    <label class="form-label">Код промокода *</label>
+    <input type="text" id="promo-f-code" class="form-input" placeholder="Например: REWEAR30" style="text-transform: uppercase;">
   </div>
 
-  <label class="form-label">Магазин</label>
+  <div class="form-group">
     <label class="form-label">Скидка (сум) *</label>
     <input type="number" id="promo-f-discount" class="form-input" placeholder="30000">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Минимальная сумма заказа (сум)</label>
+    <input type="number" id="promo-f-min" class="form-input" placeholder="150000" value="150000">
   </div>
 
   <label class="form-label">Магазин</label>
