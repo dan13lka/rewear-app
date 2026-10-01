@@ -1997,7 +1997,95 @@
   letter-spacing: 0.5px;
   padding: 20px 16px 12px;
 }
- 
+ /* ВЫБОР МАГАЗИНОВ В ОТЗЫВЕ */
+.review-shops-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.review-shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.review-shop-item:active {
+  background: #222;
+}
+
+.review-shop-item.selected {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.review-shop-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  background: transparent;
+}
+
+.review-shop-item.selected .review-shop-checkbox {
+  background: #4ade80;
+  border-color: #4ade80;
+}
+
+.review-shop-checkbox svg {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.review-shop-item.selected .review-shop-checkbox svg {
+  opacity: 1;
+}
+
+.review-shop-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Пометка о магазине в ленте отзывов */
+.review-shops-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #222;
+}
+
+.review-shop-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6db8ff;
+  background: rgba(109, 184, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-shop-tag:active {
+  background: rgba(109, 184, 255, 0.2);
+}
   </style>
 </head>
 <body>
@@ -2596,7 +2684,12 @@
 
   <div class="review-form-label">Комментарий:</div>
   <textarea id="review-text" class="review-textarea" placeholder="Поделитесь впечатлениями о покупке..." maxlength="500"></textarea>
-
+  <!-- Выбор магазинов (показывается только если клиент покупал) -->
+  <div id="review-shops-block" style="display: none;">
+    <div class="review-form-label">Отметить магазины (необязательно):</div>
+    <div id="review-shops-list" class="review-shops-list"></div>
+  </div>
+  
   <div class="review-composer-actions">
     <button class="btn-cancel-review" onclick="closeReviewComposer()">Отмена</button>
     <button class="btn-send-review" onclick="submitReview()">Отправить</button>
@@ -3443,13 +3536,17 @@ function closeReviewsScreen() {
   tg.BackButton.hide();
 }
 
-function openReviewComposer() {
+async function openReviewComposer() {
   selectedReviewRating = 0;
   document.getElementById('review-text').value = '';
   document.querySelectorAll('#review-rating-picker .star').forEach(s => {
     s.classList.remove('active');
     s.innerText = '☆';
   });
+
+  // Загружаем магазины, у которых клиент покупал
+  await loadUserShopsForReview();
+
   document.getElementById('review-composer').classList.add('active');
 }
 
@@ -3508,9 +3605,42 @@ async function loadReviews() {
     emptyEl.style.display = 'none';
     feedEl.innerHTML = '';
 
+        // Собираем все shop_ids чтобы подтянуть названия
+    const allShopIds = new Set();
+    reviews.forEach(r => {
+      if (Array.isArray(r.shop_ids)) {
+        r.shop_ids.forEach(id => allShopIds.add(id));
+      }
+    });
+
+    // Загружаем магазины
+    let shopsMap = {};
+    if (allShopIds.size > 0) {
+      const { data: shopsData } = await client
+        .from('shops')
+        .select('id, name')
+        .in('id', Array.from(allShopIds));
+
+      if (shopsData) {
+        shopsData.forEach(s => { shopsMap[s.id] = s.name; });
+      }
+    }
+
     reviews.forEach(r => {
       const date = new Date(r.created_at);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      // Пометки о магазинах
+      let shopsTagsHtml = '';
+      if (Array.isArray(r.shop_ids) && r.shop_ids.length > 0) {
+        const tags = r.shop_ids
+          .filter(id => shopsMap[id])
+          .map(id => `<span class="review-shop-tag" onclick="event.stopPropagation(); openShopScreen(${id})">🏪 ${escapeHtml(shopsMap[id])}</span>`)
+          .join('');
+        if (tags) {
+          shopsTagsHtml = `<div class="review-shops-tags">${tags}</div>`;
+        }
+      }
 
       feedEl.innerHTML += `
         <div class="review-card">
@@ -3520,6 +3650,7 @@ async function loadReviews() {
           </div>
           <div class="review-card-stars">${renderStars(r.rating)}</div>
           <div class="review-card-text">${escapeHtml(r.text || '')}</div>
+          ${shopsTagsHtml}
         </div>
       `;
     });
@@ -3563,6 +3694,13 @@ async function submitReview() {
     return;
   }
 
+  // Собираем выбранные магазины
+  const selectedShopIds = [];
+  document.querySelectorAll('#review-shops-list .review-shop-item.selected').forEach(el => {
+    const shopId = Number(el.getAttribute('data-shop-id'));
+    if (shopId) selectedShopIds.push(shopId);
+  });
+
   const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
   const userName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Покупатель';
   const userUsername = user.username || '';
@@ -3575,7 +3713,8 @@ async function submitReview() {
       user_username: userUsername,
       rating: selectedReviewRating,
       text: text,
-      is_approved: false
+      is_approved: false,
+      shop_ids: selectedShopIds
     });
 
     if (error) throw error;
@@ -5165,8 +5304,65 @@ async function openProductByIdFromShop(productId) {
 }
 
 async function loadShopReviews(shopId) {
-  // Заглушка — заполним в этапе 4
-  document.getElementById('shop-reviews-empty').style.display = 'block';
+  const feedEl = document.getElementById('shop-reviews-feed');
+  const emptyEl = document.getElementById('shop-reviews-empty');
+
+  feedEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Загружаем одобренные отзывы, у которых shop_ids содержит этот магазин
+    const { data: reviews, error } = await client
+      .from('reviews')
+      .select('*')
+      .eq('is_approved', true)
+      .contains('shop_ids', [shopId])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!reviews || reviews.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    // Считаем средний рейтинг
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const avg = (totalRating / reviews.length).toFixed(1);
+
+    // Показываем рейтинг
+    const ratingEl = document.getElementById('shop-rating');
+    const starsEl = document.getElementById('shop-rating-stars');
+    const textEl = document.getElementById('shop-rating-text');
+
+    starsEl.innerText = renderStars(Math.round(avg));
+    textEl.innerText = `${avg} · ${reviews.length} ${declOfNum(reviews.length, ['отзыв', 'отзыва', 'отзывов'])}`;
+    ratingEl.style.display = 'flex';
+
+    // Рендерим отзывы
+    reviews.forEach(r => {
+      const date = new Date(r.created_at);
+      const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      feedEl.innerHTML += `
+        <div class="review-card">
+          <div class="review-card-header">
+            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
+            <div class="review-card-date">${dateStr}</div>
+          </div>
+          <div class="review-card-stars">${renderStars(r.rating)}</div>
+          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки отзывов магазина:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Ошибка загрузки';
+  }
 }
   function openShopFromProduct() {
   if (activeModalIndex === null) return;
@@ -5178,6 +5374,74 @@ async function loadShopReviews(shopId) {
   closeProduct();
   openShopScreen(p.shop_id);
 }  
+    // Загружаем магазины, у которых клиент реально покупал
+async function loadUserShopsForReview() {
+  const blockEl = document.getElementById('review-shops-block');
+  const listEl = document.getElementById('review-shops-list');
+
+  listEl.innerHTML = '';
+  blockEl.style.display = 'none';
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  if (!user.id) return;
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Загружаем все заказы клиента
+    const { data: orders, error: ordersError } = await client
+      .from('orders')
+      .select('items')
+      .eq('buyer_tg_id', user.id);
+
+    if (ordersError) throw ordersError;
+    if (!orders || orders.length === 0) return;
+
+    // Собираем все shop_id из товаров в заказах
+    const shopIdsSet = new Set();
+    orders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          if (item.shop_id) shopIdsSet.add(item.shop_id);
+        });
+      }
+    });
+
+    if (shopIdsSet.size === 0) return;
+
+    // Загружаем магазины
+    const { data: shops, error: shopsError } = await client
+      .from('shops')
+      .select('id, name')
+      .in('id', Array.from(shopIdsSet));
+
+    if (shopsError) throw shopsError;
+    if (!shops || shops.length === 0) return;
+
+    // Рендерим чек-боксы
+    shops.forEach(s => {
+      listEl.innerHTML += `
+        <div class="review-shop-item" data-shop-id="${s.id}" onclick="toggleReviewShop(this)">
+          <div class="review-shop-checkbox">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="review-shop-name">${escapeHtml(s.name)}</div>
+        </div>
+      `;
+    });
+
+    blockEl.style.display = 'block';
+
+  } catch (err) {
+    console.error('Ошибка загрузки магазинов:', err);
+  }
+}
+
+function toggleReviewShop(element) {
+  element.classList.toggle('selected');
+}
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
