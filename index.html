@@ -3422,7 +3422,13 @@ async function saveProduct() {
   };
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: {
+        headers: {
+          'x-admin-key': ADMIN_SECRET
+        }
+      }
+    });
 
     if (editingProductId) {
       const { error } = await client
@@ -3461,7 +3467,13 @@ async function deleteProduct(id) {
     if (!confirmed) return;
 
     try {
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: {
+        headers: {
+          'x-admin-key': ADMIN_SECRET
+        }
+      }
+    });
       const { error } = await client
         .from('products')
         .delete()
@@ -3488,7 +3500,13 @@ async function deleteProduct(id) {
 
 async function toggleProductStock(id) {
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: {
+        headers: {
+          'x-admin-key': ADMIN_SECRET
+        }
+      }
+    });
     
     // Получаем текущий статус
     const { data: p, error: fetchError } = await client
