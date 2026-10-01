@@ -2520,7 +2520,17 @@
           shops.add(p.shop.trim());
         }
       });
-      // Обогащаем товары названием магазина (для отображения)
+
+      shopSelect.innerHTML = '<option value="all">Все магазины</option>';
+      shops.forEach(shopName => {
+        const opt = document.createElement('option');
+        opt.value = shopName;
+        opt.innerText = shopName;
+        shopSelect.appendChild(opt);
+      });
+    }
+
+    // Обогащаем товары названием магазина (для отображения)
 async function enrichProductsWithShopNames() {
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2544,15 +2554,6 @@ async function enrichProductsWithShopNames() {
     console.error('Ошибка обогащения товаров:', err);
   }
 }
-
-      shopSelect.innerHTML = '<option value="all">Все магазины</option>';
-      shops.forEach(shopName => {
-        const opt = document.createElement('option');
-        opt.value = shopName;
-        opt.innerText = shopName;
-        shopSelect.appendChild(opt);
-      });
-    }
 
     function toggleFilterPanel() {
       const panel = document.getElementById('filter-panel');
