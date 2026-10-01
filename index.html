@@ -3217,14 +3217,15 @@ function toggleFav(e, id) {
   }
 
   let total = 0;
- const itemsForOrder = cartProducts.map(p => {
+  const itemsForOrder = cartProducts.map(p => {
   total += Number(p.price || 0);
   return {
     id: p.id,
     title: p.title || 'Без названия',
     price: Number(p.price || 0),
     size: cartSizes[String(p.id)] || '',
-    shop: p.shop || ''
+    shop: p.shop || '',
+    shop_id: p.shop_id || null
   };
 });
 
