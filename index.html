@@ -2613,6 +2613,15 @@
     </select>
   </div>
 
+    <div class="form-group">
+    <label class="form-label">Пол</label>
+    <select id="pf-gender" class="form-select">
+      <option value="unisex">⚥ Унисекс</option>
+      <option value="male">♂ Мужское</option>
+      <option value="female">♀ Женское</option>
+    </select>
+  </div>
+
   <div class="form-group">
     <label class="form-label">Размеры (через запятую)</label>
     <input type="text" id="pf-sizes" class="form-input" placeholder="S, M, L, XL">
@@ -2682,7 +2691,7 @@
     <input type="number" id="sf-display-order" class="form-input" value="0">
   </div>
 
-  <div class="form-group">
+  <label class="form-label">Магазин</label>
     <label class="form-label">Статус</label>
     <select id="sf-active" class="form-select">
       <option value="true">Активен</option>
@@ -2706,19 +2715,19 @@
 
   <div id="promo-form-title" class="form-title">Создать промокод</div>
 
-    <div class="form-group">
+    <label class="form-label">Магазин</label>
     <label class="form-label">Магазин</label>
     <select id="pf-shop-id" class="form-select">
       <option value="">— Не выбран —</option>
     </select>
   </div>
 
-  <div class="form-group">
+  <label class="form-label">Магазин</label>
     <label class="form-label">Скидка (сум) *</label>
     <input type="number" id="promo-f-discount" class="form-input" placeholder="30000">
   </div>
 
-  <div class="form-group">
+  <label class="form-label">Магазин</label>
     <label class="form-label">Минимальная сумма заказа (сум)</label>
     <input type="number" id="promo-f-min" class="form-input" placeholder="150000" value="150000">
   </div>
@@ -4284,7 +4293,7 @@ async function loadAdminProducts() {
           <img class="admin-product-img" src="${imgUrl}" alt="">
           <div class="admin-product-info">
             <div class="admin-product-title">${escapeHtml(p.title || 'Без названия')}</div>
-            <div class="admin-product-meta">${escapeHtml(p.category || '')} ${p.shop ? '· ' + escapeHtml(p.shop) : ''}</div>
+            <div class="admin-product-meta">${getGenderIcon(p.gender)} ${escapeHtml(p.category || '')} ${p.shop ? '· ' + escapeHtml(p.shop) : ''}</div>
             <div class="admin-product-price">${Number(p.price || 0).toLocaleString('ru-RU')} сум</div>
             ${isSold ? '<div class="admin-product-sold">ПРОДАНО</div>' : ''}
           </div>
@@ -4304,6 +4313,12 @@ async function loadAdminProducts() {
   }
 }
 
+function getGenderIcon(gender) {
+  if (gender === 'male') return '♂';
+  if (gender === 'female') return '♀';
+  return '⚥';
+}
+    
 async function openProductForm() {
   editingProductId = null;
   document.getElementById('product-form-title').innerText = 'Добавить товар';
@@ -4314,6 +4329,7 @@ async function openProductForm() {
   document.getElementById('pf-images').value = '';
   document.getElementById('pf-description').value = '';
   document.getElementById('pf-instock').value = 'true';
+  document.getElementById('pf-gender').value = 'unisex';
 
   // Загружаем магазины в dropdown
   await populateShopDropdown();
@@ -4352,6 +4368,7 @@ async function editProduct(id) {
     document.getElementById('pf-price').value = p.price || '';
     document.getElementById('pf-category').value = p.category || '';
     document.getElementById('pf-shop-id').value = p.shop_id || '';
+    document.getElementById('pf-gender').value = p.gender || 'unisex';
     
     // Размеры
     let sizesStr = '';
@@ -4391,6 +4408,7 @@ async function saveProduct() {
   const shopIdRaw = document.getElementById('pf-shop-id').value;
   const shopId = shopIdRaw ? Number(shopIdRaw) : null;
   const sizesStr = document.getElementById('pf-sizes').value.trim();
+  const gender = document.getElementById('pf-gender').value;
   const imagesStr = document.getElementById('pf-images').value.trim();
   const description = document.getElementById('pf-description').value.trim();
   const inStock = document.getElementById('pf-instock').value === 'true';
@@ -4413,18 +4431,19 @@ async function saveProduct() {
   const imagesArr = imagesStr
     ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
     : [];
-
-   const productData = {
+  
+    const productData = {
     title,
     price,
     category,
     shop_id: shopId,
+    gender: gender,
     sizes: sizesArr,
     image_urls: imagesArr,
     description,
     in_stock: inStock
   };
-
+  
   try {
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: {
