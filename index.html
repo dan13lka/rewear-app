@@ -2816,6 +2816,7 @@
     
     let loadedProducts = [];
     let selectedCategory = 'все';
+    let selectedGender = 'all';
     
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
@@ -2862,6 +2863,7 @@
         // Обогащаем товары названием магазина (для отображения)
         await enrichProductsWithShopNames();
         populateShopFilter(loadedProducts);
+        updateCategoryChips();
         renderProducts(loadedProducts);
         loadBanners();
 
@@ -2925,7 +2927,7 @@ async function enrichProductsWithShopNames() {
     }
 
     // Комплексная фильтрация + Сортировка по цене
-    function applyFilters() {
+       function applyFilters() {
       const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
       const selectedShop = document.getElementById('filter-shop').value;
       const minPrice = parseFloat(document.getElementById('filter-price-min').value) || 0;
@@ -2939,18 +2941,28 @@ async function enrichProductsWithShopNames() {
         const shopTextMatch = (product.shop || '').toLowerCase().includes(searchQuery);
         const searchMatches = titleMatch || descMatch || shopTextMatch;
 
-        // 2. Категория
+        // 2. Пол
+        const gender = product.gender || 'unisex';
+        let genderMatches = true;
+        if (selectedGender === 'male') {
+          genderMatches = (gender === 'male' || gender === 'unisex');
+        } else if (selectedGender === 'female') {
+          genderMatches = (gender === 'female' || gender === 'unisex');
+        }
+        // если selectedGender === 'all' — показываем всё
+
+        // 3. Категория
         const catLower = selectedCategory.toLowerCase();
         const categoryMatches = (catLower === 'все') || (product.category && product.category.toLowerCase().includes(catLower));
 
-        // 3. Продавец
+        // 4. Продавец
         const shopMatches = (selectedShop === 'all') || (product.shop === selectedShop);
 
-        // 4. Цена
+        // 5. Цена
         const price = Number(product.price || 0);
         const priceMatches = price >= minPrice && price <= maxPrice;
 
-        return searchMatches && categoryMatches && shopMatches && priceMatches;
+        return searchMatches && genderMatches && categoryMatches && shopMatches && priceMatches;
       });
 
       // Логика сортировки по цене
@@ -2963,16 +2975,22 @@ async function enrichProductsWithShopNames() {
       renderProducts(filtered);
     }
 
-    function resetFilters() {
+        function resetFilters() {
       document.getElementById('search-input').value = '';
       document.getElementById('filter-shop').value = 'all';
       document.getElementById('filter-sort').value = 'default';
       document.getElementById('filter-price-min').value = '';
       document.getElementById('filter-price-max').value = '';
       selectedCategory = 'все';
-      
-      document.querySelectorAll('.cat-chip').forEach(chip => chip.classList.remove('active'));
-      document.querySelector('.cat-chip').classList.add('active');
+      selectedGender = 'all';
+
+      // Сбрасываем табы пола
+      document.querySelectorAll('.gender-tab').forEach(tab => tab.classList.remove('active'));
+      const firstGenderTab = document.querySelector('.gender-tab');
+      if (firstGenderTab) firstGenderTab.classList.add('active');
+
+      // Пересобираем категории и сбрасываем активный чипс
+      updateCategoryChips();
 
       applyFilters();
     }
@@ -5523,6 +5541,58 @@ async function loadUserShopsForReview() {
 
 function toggleReviewShop(element) {
   element.classList.toggle('selected');
+}
+    // === ВЫБОР ПОЛА ===
+function selectGender(gender, element) {
+  // Обновляем активный таб
+  document.querySelectorAll('.gender-tab').forEach(tab => tab.classList.remove('active'));
+  if (element) element.classList.add('active');
+
+  selectedGender = gender;
+
+  // Сбрасываем категорию на "все" при смене пола
+  selectedCategory = 'все';
+
+  // Перестраиваем категории и фильтруем
+  updateCategoryChips();
+  applyFilters();
+}
+
+// Перестраиваем чипсы категорий под выбранный пол
+function updateCategoryChips() {
+  const catBar = document.querySelector('.categories-bar');
+  if (!catBar) return;
+
+  // Собираем категории, у которых есть товары в выбранном поле
+  const categories = new Set();
+
+  loadedProducts.forEach(p => {
+    // Проверяем по полу
+    let genderMatch = false;
+    if (selectedGender === 'all') {
+      genderMatch = true;
+    } else if (selectedGender === 'male') {
+      genderMatch = (p.gender === 'male' || p.gender === 'unisex' || !p.gender);
+    } else if (selectedGender === 'female') {
+      genderMatch = (p.gender === 'female' || p.gender === 'unisex' || !p.gender);
+    }
+
+    if (genderMatch && p.category && p.category.trim() !== '') {
+      categories.add(p.category.trim());
+    }
+  });
+
+  // Формируем HTML
+  const sortedCategories = Array.from(categories).sort();
+
+  let html = `<button class="cat-chip active" onclick="filterCategory('все', this)">Все</button>`;
+
+  sortedCategories.forEach(cat => {
+    const catLower = cat.toLowerCase();
+    html += `<button class="cat-chip" onclick="filterCategory('${escapeHtml(catLower)}', this)">${escapeHtml(cat)}</button>`;
+  });
+
+  catBar.innerHTML = html;
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
