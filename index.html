@@ -938,6 +938,88 @@
   margin-top: 2px;
   font-weight: 600;
 }
+  /* ПРОДАННЫЕ ТОВАРЫ */
+.card-img-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.card-sold .card-img-wrapper .card-img {
+  filter: grayscale(0.6) brightness(0.5);
+}
+
+.sold-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.sold-overlay span {
+  background: rgba(255, 77, 77, 0.95);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.card-sold .card-title,
+.card-sold .card-price {
+  opacity: 0.6;
+}
+
+/* НЕТ В НАЛИЧИИ в модалке */
+.out-of-stock-message {
+  background: rgba(255, 77, 77, 0.08);
+  border: 1px solid rgba(255, 77, 77, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  color: #ff6b6b;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.btn-cart-add.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* В КОРЗИНЕ: товар больше не в наличии */
+.cart-item.out-of-stock {
+  opacity: 0.6;
+  border-color: rgba(255, 77, 77, 0.3);
+}
+
+.cart-item-out-badge {
+  display: inline-block;
+  background: rgba(255, 77, 77, 0.15);
+  color: #ff6b6b;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-checkout.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
   </style>
 </head>
 <body>
@@ -1162,6 +1244,10 @@
 <div class="size-section" id="m-size-section" style="display: none;">
   <div class="size-label">Выберите размер:</div>
   <div class="size-options" id="m-size-options"></div>
+</div>
+
+<div id="m-out-of-stock" class="out-of-stock-message" style="display: none;">
+  Нет в наличии
 </div>
     <div id="m-desc" class="modal-desc"></div>
     
@@ -1450,14 +1536,21 @@
         const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
         const shopName = product.shop || 'RE:WEAR Select';
 
+                const inStock = product.in_stock !== false;
+        const soldOverlay = inStock ? '' : '<div class="sold-overlay"><span>ПРОДАНО</span></div>';
+        const cardClass = inStock ? 'card' : 'card card-sold';
+
         const cardHtml = `
-          <div class="card" onclick="openProduct(${originalIndex})">
+          <div class="${cardClass}" onclick="openProduct(${originalIndex})">
             <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
               <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#8c8c8c'}" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
+            <div class="card-img-wrapper">
+              <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
+              ${soldOverlay}
+            </div>
             <div class="card-info">
               <div class="card-shop">${shopName}</div>
               <div class="card-title">${product.title || 'Без названия'}</div>
@@ -1466,7 +1559,7 @@
             </div>
           </div>
         `;
-        gridEl.innerHTML += cardHtml;
+        gridEl.innerHTML += cardHtml;;
       });
     }
 
@@ -1569,6 +1662,12 @@ function toggleFav(e, id) {
   const p = loadedProducts[activeModalIndex];
   const strId = String(p.id);
 
+  // Проверка: товар в наличии?
+  if (p.in_stock === false) {
+    tg.showAlert('Товара нет в наличии');
+    return;
+  }
+
   // Собираем доступные размеры товара
   let cleanSizes = [];
   if (Array.isArray(p.sizes)) {
@@ -1656,12 +1755,17 @@ function toggleFav(e, id) {
       const size = cartSizes[String(product.id)];
       const sizeHtml = size ? `<div class="cart-item-size">Размер: ${size}</div>` : '';
 
+      const isOutOfStock = product.in_stock === false;
+      const itemClass = isOutOfStock ? 'cart-item out-of-stock' : 'cart-item';
+      const outBadge = isOutOfStock ? '<div class="cart-item-out-badge">Нет в наличии</div>' : '';
+
       listEl.innerHTML += `
-        <div class="cart-item">
+        <div class="${itemClass}">
           <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
           <div class="cart-item-info">
             <div class="cart-item-title">${product.title || 'Без названия'}</div>
             ${sizeHtml}
+            ${outBadge}
             <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
           </div>
           <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
@@ -1680,7 +1784,7 @@ function toggleFav(e, id) {
 
     document.getElementById('cart-total-sum').innerText = finalSum.toLocaleString('ru-RU') + ' сум';
 
-    const discountRow = document.getElementById('cart-discount-row');
+        const discountRow = document.getElementById('cart-discount-row');
     if (discountRow) {
       if (discount > 0) {
         discountRow.style.display = 'block';
@@ -1689,12 +1793,33 @@ function toggleFav(e, id) {
         discountRow.style.display = 'none';
       }
     }
+
+    // Блокируем кнопку "Купить" если есть товары не в наличии
+    const checkoutBtn = checkoutBar.querySelector('.btn-checkout');
+    const hasOutOfStock = cartProducts.some(p => p.in_stock === false);
+
+    if (checkoutBtn) {
+      if (hasOutOfStock) {
+        checkoutBtn.classList.add('disabled');
+        checkoutBtn.innerText = 'Уберите проданные';
+      } else {
+        checkoutBtn.classList.remove('disabled');
+        checkoutBtn.innerText = 'Купить';
+      }
+    }
   }
 }
 
-    async function checkoutCart() {
+   async function checkoutCart() {
   const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
   if (cartProducts.length === 0) return;
+
+  // Проверка: есть ли товары не в наличии
+  const outOfStock = cartProducts.filter(p => p.in_stock === false);
+  if (outOfStock.length > 0) {
+    tg.showAlert('Уберите из корзины товары, которых нет в наличии');
+    return;
+  }
 
   let total = 0;
  const itemsForOrder = cartProducts.map(p => {
@@ -1854,17 +1979,31 @@ function toggleFav(e, id) {
   document.getElementById('m-title').innerText = p.title || 'Без названия';
   document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
   
-  document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
-     renderSizeOptions(p.sizes || []);
+   document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
+
+  // Проверяем наличие
+  const inStock = p.in_stock !== false;
+  const outOfStockEl = document.getElementById('m-out-of-stock');
+  const sizeSectionEl = document.getElementById('m-size-section');
+  const cartBtn = document.getElementById('m-cart-btn');
+
+  if (inStock) {
+    outOfStockEl.style.display = 'none';
+    renderSizeOptions(p.sizes || []);
+    cartBtn.classList.remove('disabled');
+    cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
+  } else {
+    if (sizeSectionEl) sizeSectionEl.style.display = 'none';
+    outOfStockEl.style.display = 'block';
+    cartBtn.classList.add('disabled');
+    cartBtn.innerText = 'Нет в наличии';
+  }
   
   document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
   
   const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
   const directMsg = encodeURIComponent(`Здравствуйте! Меня интересует: ${p.title}${shopMention} (${Number(p.price || 0).toLocaleString('ru-RU')} сум)`);
   document.getElementById('m-buy-btn').href = `https://t.me/${ADMIN_USERNAME}?text=${directMsg}`;
-  
-  const cartBtn = document.getElementById('m-cart-btn');
-  cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
 
   updateModalFavIcon(p.id);
 
