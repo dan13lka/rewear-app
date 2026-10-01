@@ -2135,6 +2135,35 @@
 .gender-tab:active {
   transform: scale(0.97);
 }
+
+    /* ИКОНКИ ПОЛА */
+.card-meta { display: flex; align-items: center; gap: 6px; }
+.card-meta .cat-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+.gender-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+.gender-badge svg { display: block; width: 12px; height: 12px; }
+.gender-badge.male   { color: #6db8ff; background: rgba(109, 184, 255, 0.12); border-color: rgba(109, 184, 255, 0.25); }
+.gender-badge.female { color: #ff8ac8; background: rgba(255, 138, 200, 0.12); border-color: rgba(255, 138, 200, 0.25); }
+.gender-badge.unisex { color: #cccccc; }
+.gender-badge.unisex svg:first-child { color: #6db8ff; }
+.gender-badge.unisex svg:last-child  { color: #ff8ac8; }
+
+/* В модалке — крупнее, с подписью */
+.tag.gender-tag { display: inline-flex; align-items: center; gap: 6px; }
+.tag.gender-tag .gender-badge { height: 22px; padding: 0 7px; }
+.tag.gender-tag .gender-badge svg { width: 14px; height: 14px; }
+    
   </style>
 </head>
 <body>
@@ -2412,6 +2441,7 @@
     <div id="m-price" class="modal-price"></div>
    <div class="modal-tags">
   <span id="m-category" class="tag"></span>
+  <span id="m-gender" class="tag gender-tag"></span>
 </div>
 <div class="size-section" id="m-size-section" style="display: none;">
   <div class="size-label">Выберите размер:</div>
@@ -3053,7 +3083,9 @@ async function enrichProductsWithShopNames() {
               <div class="card-shop">${shopName}</div>
               <div class="card-title">${product.title || 'Без названия'}</div>
               <div class="card-price">${priceVal} сум</div>
-              <div class="card-meta">${product.category || 'Без категории'}</div>
+              <div class="card-meta">${genderBadgeHtml(product.gender)}
+  <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
+</div>
             </div>
           </div>
         `;
@@ -3481,6 +3513,8 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
   
    document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
+   document.getElementById('m-gender').innerHTML =
+    genderBadgeHtml(p.gender) + `<span>${genderLabel(p.gender)}</span>`;
 
   // Проверяем наличие
   const inStock = p.in_stock !== false;
@@ -5373,7 +5407,9 @@ async function loadShopProducts(shopId) {
           <div class="card-info">
             <div class="card-title">${escapeHtml(product.title || 'Без названия')}</div>
             <div class="card-price">${priceVal} сум</div>
-            <div class="card-meta">${escapeHtml(product.category || 'Без категории')}</div>
+           <div class="card-meta">${genderBadgeHtml(product.gender)}
+  <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
+</div>
           </div>
         </div>
       `;
@@ -5555,6 +5591,28 @@ async function loadUserShopsForReview() {
 
 function toggleReviewShop(element) {
   element.classList.toggle('selected');
+}
+
+    // === ИКОНКИ ПОЛА ===
+const GENDER_ICON_MALE = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="4"/><path d="M4 22v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2z"/></svg>';
+
+const GENDER_ICON_FEMALE = '<svg viewBox="0 0 24 24" fill="currentColor"><path opacity="0.55" d="M6.5 9a5.5 5.5 0 0 1 11 0v7a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 16z"/><circle cx="12" cy="8.5" r="3.5"/><path d="M5 22v-1.5a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5V22z"/></svg>';
+
+function genderBadgeHtml(gender) {
+  if (gender === 'male') {
+    return `<span class="gender-badge male" title="Мужское">${GENDER_ICON_MALE}</span>`;
+  }
+  if (gender === 'female') {
+    return `<span class="gender-badge female" title="Женское">${GENDER_ICON_FEMALE}</span>`;
+  }
+  // unisex или пусто
+  return `<span class="gender-badge unisex" title="Унисекс">${GENDER_ICON_MALE}${GENDER_ICON_FEMALE}</span>`;
+}
+
+function genderLabel(gender) {
+  if (gender === 'male') return 'Мужское';
+  if (gender === 'female') return 'Женское';
+  return 'Унисекс';
 }
     // === ВЫБОР ПОЛА ===
 function selectGender(gender, element) {
