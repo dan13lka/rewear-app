@@ -2086,6 +2086,55 @@
 .review-shop-tag:active {
   background: rgba(109, 184, 255, 0.2);
 }
+  /* ТАБЫ ПОЛА */
+.gender-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+}
+
+.gender-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #8c8c8c;
+  padding: 10px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  letter-spacing: 0.2px;
+}
+
+.gender-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.gender-tab.active {
+  background: #ffffff;
+  color: #0d0d0d;
+}
+
+.gender-tab.active .gender-tab-icon {
+  opacity: 1;
+}
+
+.gender-tab:active {
+  transform: scale(0.97);
+}
   </style>
 </head>
 <body>
@@ -2125,7 +2174,39 @@
       <div class="banners-track" id="banners-track"></div>
       <div class="banners-dots" id="banners-dots"></div>
     </div>
-    
+        <!-- ТАБЫ ПОЛА -->
+    <div class="gender-tabs" id="gender-tabs">
+      <button class="gender-tab active" onclick="selectGender('all', this)">
+        <span class="gender-tab-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </span>
+        <span>Все</span>
+      </button>
+      <button class="gender-tab" onclick="selectGender('male', this)">
+        <span class="gender-tab-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="10" cy="14" r="5"></circle>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <polyline points="15 3 21 3 21 9"></polyline>
+          </svg>
+        </span>
+        <span>Мужское</span>
+      </button>
+      <button class="gender-tab" onclick="selectGender('female', this)">
+        <span class="gender-tab-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="9" r="5"></circle>
+            <line x1="12" y1="14" x2="12" y2="22"></line>
+            <line x1="8" y1="18" x2="16" y2="18"></line>
+          </svg>
+        </span>
+        <span>Женское</span>
+      </button>
+    </div>
     <!-- ВЫПАДАЮЩАЯ ПАНЕЛЬ ФИЛЬТРОВ И СОРТИРОВКИ -->
     <div id="filter-panel" class="filter-panel">
       <!-- СОРТИРОВКА -->
