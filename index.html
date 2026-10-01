@@ -1555,10 +1555,22 @@ function toggleFav(e, id) {
   closeProduct();
 }
 
-  function removeFromCart(id) {
+    function removeFromCart(id) {
   const strId = String(id);
   cart = cart.filter(itemId => itemId !== strId);
   delete cartSizes[strId];
+
+  // Если корзина пуста или скидка больше не проходит — сбрасываем промокод
+  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
+  const cartTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
+  if (appliedPromo && (cartTotal === 0 || appliedPromo.discount_amount >= cartTotal)) {
+    appliedPromo = null;
+    const promoInputW = document.getElementById('promo-input-wrapper');
+    if (promoInputW) promoInputW.style.display = 'flex';
+    const promoSuccess = document.getElementById('promo-success');
+    if (promoSuccess) promoSuccess.style.display = 'none';
+  }
+
   saveState();
   renderCart();
 }
@@ -1612,8 +1624,27 @@ listEl.innerHTML += `
 `;
         });
 
-        document.getElementById('cart-total-count').innerText = cartProducts.length;
-        document.getElementById('cart-total-sum').innerText = totalSum.toLocaleString('ru-RU') + ' сум';
+               document.getElementById('cart-total-count').innerText = cartProducts.length;
+
+        // Учитываем промокод
+        let finalSum = totalSum;
+        let discount = 0;
+        if (appliedPromo) {
+          discount = Math.min(appliedPromo.discount_amount, totalSum);
+          finalSum = Math.max(0, totalSum - discount);
+        }
+
+        document.getElementById('cart-total-sum').innerText = finalSum.toLocaleString('ru-RU') + ' сум';
+
+        const discountRow = document.getElementById('cart-discount-row');
+        if (discountRow) {
+          if (discount > 0) {
+            discountRow.style.display = 'block';
+            document.getElementById('cart-discount-amount').innerText = '-' + discount.toLocaleString('ru-RU') + ' сум';
+          } else {
+            discountRow.style.display = 'none';
+          }
+        }
       }
     }
 
@@ -1641,13 +1672,24 @@ listEl.innerHTML += `
   let orderId = null;
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Учитываем скидку
+    let finalTotal = total;
+    let promoCode = null;
+    let promoDiscount = 0;
+    if (appliedPromo) {
+      promoDiscount = Math.min(appliedPromo.discount_amount, total);
+      finalTotal = Math.max(0, total - promoDiscount);
+      promoCode = appliedPromo.code;
+    }
+
     const { data, error } = await client.from('orders').insert({
       buyer_tg_id: user.id || null,
       buyer_username: buyerUsername,
       buyer_name: buyerName,
       items: itemsForOrder,
-      total_sum: total,
-      status: 'new'
+      total_sum: finalTotal,
+      status: 'new',
+      notes: promoCode ? `Промокод: ${promoCode} (-${promoDiscount.toLocaleString('ru-RU')} сум)` : null
     }).select().single();
 
     if (error) throw error;
@@ -1665,12 +1707,14 @@ listEl.innerHTML += `
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
+            body: JSON.stringify({
         id: orderId,
         buyer_name: buyerName,
         buyer_username: buyerUsername,
         items: itemsForOrder,
-        total_sum: total
+        total_sum: finalTotal,
+        promo_code: promoCode,
+        promo_discount: promoDiscount
       })
     });
   } catch (err) {
@@ -1679,21 +1723,60 @@ listEl.innerHTML += `
   }
 
   // 3. Открываем чат с тобой (как раньше)
-  let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
+    let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
   cartProducts.forEach((p, idx) => {
   const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
   const size = cartSizes[String(p.id)] || 'не указан';
   message += `${idx + 1}. ${p.title} (Размер: ${size})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
 });
-  message += `\nИтого: ${total.toLocaleString('ru-RU')} сум`;
+  if (promoCode) {
+    message += `\nПромокод ${promoCode}: -${promoDiscount.toLocaleString('ru-RU')} сум`;
+  }
+  message += `\nИтого: ${finalTotal.toLocaleString('ru-RU')} сум`;
 
   const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
 
-  // 4. Чистим корзину
+    // 4. Записываем использование промокода
+  if (appliedPromo && user.id) {
+    try {
+      const clientPromo = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      await clientPromo.from('promo_uses').insert({
+        promo_code: appliedPromo.code,
+        user_tg_id: user.id
+      });
+
+      const { data: promoData } = await clientPromo
+        .from('promo_codes')
+        .select('used_count')
+        .eq('code', appliedPromo.code)
+        .single();
+
+      if (promoData) {
+        await clientPromo
+          .from('promo_codes')
+          .update({ used_count: (promoData.used_count || 0) + 1 })
+          .eq('code', appliedPromo.code);
+      }
+    } catch (err) {
+      console.error('Ошибка записи использования промокода:', err);
+    }
+  }
+
+  // 5. Чистим корзину
   cart = [];
-cartSizes = {};
-saveState();
-renderCart();
+  cartSizes = {};
+  appliedPromo = null;
+
+  const promoInputW = document.getElementById('promo-input-wrapper');
+  if (promoInputW) promoInputW.style.display = 'flex';
+  const promoSuccess = document.getElementById('promo-success');
+  if (promoSuccess) promoSuccess.style.display = 'none';
+  const promoInput = document.getElementById('promo-input');
+  if (promoInput) promoInput.value = '';
+
+  saveState();
+  renderCart();
 
   if (tg && tg.openTelegramLink) {
     tg.openTelegramLink(targetUrl);
@@ -2175,6 +2258,116 @@ async function loadMyOrders() {
     emptyEl.querySelector('button').style.display = 'none';
   }
 }
+   // === ПРОМОКОДЫ ===
+async function applyPromo() {
+  const input = document.getElementById('promo-input');
+  const successEl = document.getElementById('promo-success');
+  const errorEl = document.getElementById('promo-error');
+  const inputWrapper = document.getElementById('promo-input-wrapper');
+
+  const code = input.value.trim().toUpperCase();
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!code) {
+    showPromoError('Введите промокод');
+    return;
+  }
+
+  // Считаем сумму корзины
+  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
+  const cartTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 1. Ищем промокод
+    const { data: promos, error: promoError } = await client
+      .from('promo_codes')
+      .select('*')
+      .eq('code', code)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (promoError) throw promoError;
+
+    if (!promos || promos.length === 0) {
+      showPromoError('Промокод не найден');
+      return;
+    }
+
+    const promo = promos[0];
+
+    // 2. Проверка минимальной суммы
+    if (Number(promo.min_order_sum || 0) > cartTotal) {
+      showPromoError(`Минимальная сумма заказа для этого промокода — ${Number(promo.min_order_sum).toLocaleString('ru-RU')} сум`);
+      return;
+    }
+
+    // 3. Проверка лимита использований
+    if (promo.max_uses && promo.used_count >= promo.max_uses) {
+      showPromoError('Этот промокод больше не действует');
+      return;
+    }
+
+    // 4. Проверка: не использовал ли этот юзер
+    const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+    if (user.id) {
+      const { data: uses, error: useError } = await client
+        .from('promo_uses')
+        .select('id')
+        .eq('promo_code', code)
+        .eq('user_tg_id', user.id)
+        .limit(1);
+
+      if (useError) throw useError;
+
+      if (uses && uses.length > 0) {
+        showPromoError('Вы уже использовали этот промокод');
+        return;
+      }
+    }
+
+    // 5. Проверка: скидка не больше суммы заказа
+    if (Number(promo.discount_amount) >= cartTotal) {
+      showPromoError('Скидка по промокоду больше суммы заказа');
+      return;
+    }
+
+    // Всё ок — применяем
+    appliedPromo = {
+      code: promo.code,
+      discount_amount: Number(promo.discount_amount)
+    };
+
+    document.getElementById('promo-success-text').innerText =
+      `✅ Промокод ${promo.code}: -${Number(promo.discount_amount).toLocaleString('ru-RU')} сум`;
+    inputWrapper.style.display = 'none';
+    successEl.style.display = 'flex';
+
+    renderCart();
+
+  } catch (err) {
+    console.error('Ошибка проверки промокода:', err);
+    showPromoError('Ошибка проверки промокода. Попробуйте ещё раз.');
+  }
+}
+
+function showPromoError(message) {
+  const errorEl = document.getElementById('promo-error');
+  errorEl.innerText = message;
+  errorEl.style.display = 'block';
+}
+
+function removePromo() {
+  appliedPromo = null;
+  document.getElementById('promo-input').value = '';
+  document.getElementById('promo-input-wrapper').style.display = 'flex';
+  document.getElementById('promo-success').style.display = 'none';
+  document.getElementById('promo-error').style.display = 'none';
+  renderCart();
+} 
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
