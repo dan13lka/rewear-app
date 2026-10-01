@@ -1021,6 +1021,51 @@
   cursor: not-allowed;
   pointer-events: none;
 }
+/* БАННЕРЫ — обёртка и трек */
+.banners-container {
+  position: relative;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.banners-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.banners-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Точки-индикаторы */
+.banners-dots {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  display: flex;
+  gap: 5px;
+  z-index: 3;
+}
+
+.banners-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.2s;
+}
+
+.banners-dot.active {
+  background: #ffffff;
+  width: 14px;
+  border-radius: 3px;
+}
+    
 /* БАННЕР — контейнер слайда */
 .banner-slide {
   flex: 0 0 100%;
@@ -1193,18 +1238,7 @@
       <div class="banners-track" id="banners-track"></div>
       <div class="banners-dots" id="banners-dots"></div>
     </div>
-    .banners-track {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-.banners-track::-webkit-scrollbar {
-  display: none;
-}
+    
     <!-- ВЫПАДАЮЩАЯ ПАНЕЛЬ ФИЛЬТРОВ И СОРТИРОВКИ -->
     <div id="filter-panel" class="filter-panel">
       <!-- СОРТИРОВКА -->
