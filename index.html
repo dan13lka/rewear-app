@@ -1921,6 +1921,8 @@
   text-transform: uppercase;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+.shop-avatar { overflow: hidden; }
+.shop-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .shop-name {
   font-size: 22px;
@@ -2692,6 +2694,11 @@
   <div class="form-group">
     <label class="form-label">Название магазина *</label>
     <input type="text" id="sf-name" class="form-input" placeholder="Например: Street Store">
+  </div>
+
+    <div class="form-group">
+    <label class="form-label">Ссылка на аватарку (URL картинки)</label>
+    <input type="text" id="sf-avatar" class="form-input" placeholder="https://...">
   </div>
 
   <div class="form-group">
@@ -5103,6 +5110,7 @@ function openShopForm() {
   editingShopId = null;
   document.getElementById('shop-form-title').innerText = 'Добавить магазин';
   document.getElementById('sf-name').value = '';
+  document.getElementById('sf-avatar').value = '';
   document.getElementById('sf-description').value = '';
   document.getElementById('sf-telegram').value = '';
   document.getElementById('sf-instagram').value = '';
@@ -5136,6 +5144,7 @@ async function editShop(id) {
     editingShopId = id;
     document.getElementById('shop-form-title').innerText = 'Редактировать магазин';
     document.getElementById('sf-name').value = s.name || '';
+    document.getElementById('sf-avatar').value = s.avatar_url || '';
     document.getElementById('sf-description').value = s.description || '';
     document.getElementById('sf-telegram').value = s.telegram || '';
     document.getElementById('sf-instagram').value = s.instagram || '';
@@ -5155,6 +5164,7 @@ async function editShop(id) {
 
 async function saveShop() {
   const name = document.getElementById('sf-name').value.trim();
+  const avatarUrl = document.getElementById('sf-avatar').value.trim();
   const description = document.getElementById('sf-description').value.trim();
   const telegram = document.getElementById('sf-telegram').value.trim().replace('@', '');
   const instagram = document.getElementById('sf-instagram').value.trim().replace('@', '');
@@ -5169,10 +5179,8 @@ async function saveShop() {
 
   const shopData = {
     name,
+    avatar_url: avatarUrl || null,
     description,
-    telegram,
-    instagram,
-    phone,
     display_order: displayOrder,
     is_active: isActive
   };
@@ -5308,9 +5316,20 @@ async function openShopScreen(shopId) {
 
     document.getElementById('shop-name').innerText = shop.name || 'Магазин';
 
+        const avatarEl = document.getElementById('shop-avatar');
     const firstLetter = (shop.name || '?').trim().charAt(0).toUpperCase();
-    document.getElementById('shop-avatar').innerText = firstLetter;
 
+    if (shop.avatar_url) {
+      const img = document.createElement('img');
+      img.src = shop.avatar_url;
+      img.alt = '';
+      // если ссылка битая, возвращаем букву
+      img.onerror = () => { avatarEl.innerText = firstLetter; };
+      avatarEl.innerHTML = '';
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.innerText = firstLetter;
+    }
     if (shop.description) {
       document.getElementById('shop-description').innerText = shop.description;
     }
