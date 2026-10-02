@@ -302,11 +302,71 @@
     
     .modal-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .tag { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #a0a0a0; }
-    .modal-desc { font-size: 14px; color: #cccccc; line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
+    .modal-desc-block {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.modal-desc-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 8px;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: #cccccc;
+  line-height: 1.6;
+  white-space: pre-line;
+  margin: 0;
+}
     
     .modal-actions { position: fixed; bottom: 20px; left: 16px; right: 16px; display: flex; gap: 10px; z-index: 102; }
-    .btn-buy, a.btn-buy { flex: 2; background-color: #8c8c8c !important; color: #0d0d0d !important; border: none !important; text-align: center; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 14px; text-decoration: none; }
-    .btn-cart-add { flex: 1; background-color: #1f1f1f; color: #ffffff; border: 1px solid #333; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
+        .btn-cart-add {
+      flex: 1;
+      background-color: #ffffff;
+      color: #0d0d0d;
+      border: none;
+      padding: 16px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .btn-cart-add:active {
+      opacity: 0.85;
+      transform: scale(0.98);
+    }
+    .btn-cart-add.in-cart {
+      flex: 3;
+      padding: 14px;
+      font-size: 13px;
+    }
+    .btn-go-cart-small {
+      flex: 1;
+      background-color: #1f1f1f;
+      color: #ffffff;
+      border: 1px solid #333;
+      padding: 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-go-cart-small:active {
+      transform: scale(0.95);
+      background: #2a2a2a;
+    }
   /* ГАЛЕРЕЯ В МОДАЛКЕ */
 .modal-gallery {
   position: relative;
@@ -2218,6 +2278,43 @@
   min-width: 20px;
   text-align: center;
 } 
+
+/* ЗАГОЛОВОК КОРЗИНЫ С МУСОРКОЙ */
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cart-clear-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+  color: #ff6b6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.cart-clear-btn:active {
+  background: rgba(255, 107, 107, 0.18);
+  transform: scale(0.92);
+}
+
+.app-version {
+  text-align: center;
+  font-size: 11px;
+  color: #444;
+  padding: 24px 0 8px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
     
   </style>
 </head>
@@ -2356,9 +2453,19 @@
     <div id="fav-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">У вас пока нет сохранённых товаров.</div>
   </div>
 
-   <!-- 3. КОРЗИНА -->
+    <!-- 3. КОРЗИНА -->
   <div id="tab-cart" class="tab-content">
-    <div class="section-title">Корзина</div>
+    <div class="cart-header">
+      <div class="section-title" style="margin-bottom: 0;">Корзина</div>
+      <button class="cart-clear-btn" onclick="clearCart()" id="cart-clear-btn" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </button>
+    </div>
     <div class="cart-list" id="cart-list"></div>
     <div id="cart-empty" style="text-align: center; color: #8c8c8c; padding: 40px 0;">Корзина пуста.</div>
 
@@ -2468,6 +2575,8 @@
     </svg>
   </button>
   </div>
+  <!-- ВЕРСИЯ -->
+  <div class="app-version">RE:WEAR · v1.0</div>
   </div>
   <!-- МОДАЛЬНОЕ ОКНО ТОВАРА -->
   <div id="product-modal" class="modal">
@@ -2506,11 +2615,20 @@
 <div id="m-out-of-stock" class="out-of-stock-message" style="display: none;">
   Нет в наличии
 </div>
-    <div id="m-desc" class="modal-desc"></div>
+        <div class="modal-desc-block">
+      <div class="modal-desc-label">Описание</div>
+      <div id="m-desc" class="modal-desc"></div>
+    </div>
     
-    <div class="modal-actions">
-      <a id="m-buy-btn" href="#" target="_blank" class="btn-buy">Написать продавцу</a>
-      <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">В корзину</button>
+        <div class="modal-actions">
+      <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">Добавить в корзину</button>
+      <button id="m-go-cart-btn" class="btn-go-cart-small" onclick="goToCartFromModal()" style="display: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+      </button>
     </div>
   </div>
 <!-- ЭКРАН ОТЗЫВОВ -->
@@ -2949,10 +3067,18 @@
 }
 
     async function initAndLoad() {
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         const user = tg.initDataUnsafe.user;
         document.getElementById('user-name').innerText = (user.first_name || '') + ' ' + (user.last_name || '');
         document.getElementById('user-handle').innerText = user.username ? '@' + user.username : 'Telegram User';
+
+        // Аватарка из Telegram (если есть)
+        if (user.photo_url) {
+          const avatarEl = document.querySelector('.profile-avatar');
+          if (avatarEl) {
+            avatarEl.innerHTML = `<img src="${user.photo_url}" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+          }
+        }
 
         // Показываем кнопку админки только админу
         if (user.id === ADMIN_TG_ID) {
@@ -3318,13 +3444,19 @@ function toggleFav(e, id) {
     });
   }
 
-  saveState();
+    saveState();
   renderCart();
 
-  // Обновляем кнопку в модалке
+  // Обновляем кнопки в модалке
   const cartBtn = document.getElementById('m-cart-btn');
+  const goCartBtn = document.getElementById('m-go-cart-btn');
+
   if (cartBtn) {
-    cartBtn.innerText = '✓ В корзине';
+    cartBtn.classList.add('in-cart');
+    cartBtn.innerText = '✓ Товар в корзине';
+  }
+  if (goCartBtn) {
+    goCartBtn.style.display = 'flex';
   }
 }
 
@@ -3359,6 +3491,31 @@ function toggleFav(e, id) {
     cartBtn.innerText = '✓ В корзине';
   }
 }
+
+    function clearCart() {
+  tg.showConfirm('Очистить всю корзину?', (confirmed) => {
+    if (!confirmed) return;
+
+    cart = [];
+    appliedPromo = null;
+
+    const promoInputW = document.getElementById('promo-input-wrapper');
+    if (promoInputW) promoInputW.style.display = 'flex';
+    const promoSuccess = document.getElementById('promo-success');
+    if (promoSuccess) promoSuccess.style.display = 'none';
+    const promoInput = document.getElementById('promo-input');
+    if (promoInput) promoInput.value = '';
+
+    saveState();
+    renderCart();
+  });
+}
+
+    function goToCartFromModal() {
+  closeProduct();
+  switchTab('cart');
+}
+    
    function updateCartBadge() {
   // Считаем общее количество штук (сумма qty по всем строкам)
   let totalQty = 0;
@@ -3388,16 +3545,20 @@ function toggleFav(e, id) {
     return loadedProducts.some(p => String(p.id) === item.id);
   });
 
+    const clearBtn = document.getElementById('cart-clear-btn');
+
   if (validItems.length === 0) {
     emptyEl.style.display = 'block';
     checkoutBar.style.display = 'none';
     if (promoBlock) promoBlock.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
     return;
   }
 
   emptyEl.style.display = 'none';
   checkoutBar.style.display = 'flex';
   if (promoBlock) promoBlock.style.display = 'block';
+  if (clearBtn) clearBtn.style.display = 'flex';
 
   let totalSum = 0;
   let totalQty = 0;
@@ -3681,26 +3842,35 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   const sizeSectionEl = document.getElementById('m-size-section');
   const cartBtn = document.getElementById('m-cart-btn');
 
+   const goCartBtn = document.getElementById('m-go-cart-btn');
+
   if (inStock) {
     outOfStockEl.style.display = 'none';
     renderSizeOptions(p.sizes || []);
     cartBtn.classList.remove('disabled');
 
-    // Проверяем — есть ли этот товар в корзине (по id, любой размер)
     const inCart = cart.some(item => String(item.id) === String(p.id));
-    cartBtn.innerText = inCart ? '✓ В корзине' : 'В корзину';
+    if (inCart) {
+      cartBtn.classList.add('in-cart');
+      cartBtn.innerText = '✓ Товар в корзине';
+      if (goCartBtn) goCartBtn.style.display = 'flex';
+    } else {
+      cartBtn.classList.remove('in-cart');
+      cartBtn.innerText = 'Добавить в корзину';
+      if (goCartBtn) goCartBtn.style.display = 'none';
+    }
   } else {
     if (sizeSectionEl) sizeSectionEl.style.display = 'none';
     outOfStockEl.style.display = 'block';
     cartBtn.classList.add('disabled');
+    cartBtn.classList.remove('in-cart');
     cartBtn.innerText = 'Нет в наличии';
+    if (goCartBtn) goCartBtn.style.display = 'none';
   }
   
   document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
   
   const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
-  const directMsg = encodeURIComponent(`Здравствуйте! Меня интересует: ${p.title}${shopMention} (${Number(p.price || 0).toLocaleString('ru-RU')} сум)`);
-  document.getElementById('m-buy-btn').href = `https://t.me/${ADMIN_USERNAME}?text=${directMsg}`;
 
   updateModalFavIcon(p.id);
 
