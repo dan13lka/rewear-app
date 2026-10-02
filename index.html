@@ -3311,14 +3311,20 @@ function toggleFav(e, id) {
   closeProduct();
 }
 
-    function removeFromCart(id) {
+  function removeFromCart(id, size) {
   const strId = String(id);
-  cart = cart.filter(itemId => itemId !== strId);
-  delete cartSizes[strId];
+  const strSize = String(size || '');
 
-  // Если корзина пуста или скидка больше не проходит — сбрасываем промокод
-  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
-  const cartTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
+  // Удаляем строку с этим товаром И этим размером
+  cart = cart.filter(item => !(item.id === strId && item.size === strSize));
+
+  // Считаем итог корзины для проверки промокода
+  let cartTotal = 0;
+  cart.forEach(item => {
+    const p = loadedProducts.find(prod => String(prod.id) === item.id);
+    if (p) cartTotal += Number(p.price || 0) * (item.qty || 1);
+  });
+
   if (appliedPromo && (cartTotal === 0 || appliedPromo.discount_amount >= cartTotal)) {
     appliedPromo = null;
     const promoInputW = document.getElementById('promo-input-wrapper');
