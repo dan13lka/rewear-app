@@ -6510,59 +6510,57 @@ function closeCustomConfirm(result) {
     confirmCallback = null;
   }
 }
+
 // === ЗАГРУЗКА ФОТО ===
 async function handlePhotoUpload(event) {
-  const files = event.target.files;
-  if (!files || files.length === 0) return;
+  const input = event.target;
 
-  // Сбрасываем input чтобы можно было выбрать те же файлы повторно
-  event.target.value = '';
+  // ВАЖНО: сначала копируем файлы, и только потом очищаем input
+  const files = Array.from(input.files || []);
+  input.value = '';
 
-  const currentCount = uploadedPhotos.length;
+  if (files.length === 0) return;
+
   const maxPhotos = 5;
-  const remaining = maxPhotos - currentCount;
+  const remaining = maxPhotos - uploadedPhotos.length;
 
   if (remaining <= 0) {
     showAlert('Максимум 5 фото на товар');
     return;
   }
 
-  const filesToProcess = Array.from(files).slice(0, remaining);
-
   if (files.length > remaining) {
     showAlert(`Можно добавить только ${remaining} фото (макс ${maxPhotos})`);
   }
 
-  // Показываем индикатор загрузки
+  const filesToProcess = files.slice(0, remaining);
   const previewEl = document.getElementById('pf-photos-preview');
-  for (let i = 0; i < filesToProcess.length; i++) {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'photo-preview-item photo-preview-loading';
-    loadingDiv.id = 'photo-loading-' + i;
-    loadingDiv.innerText = '...';
-    previewEl.appendChild(loadingDiv);
-  }
+  let lastError = null;
 
-  // Загружаем каждое фото
   for (let i = 0; i < filesToProcess.length; i++) {
+    // Перерисовываем превью и добавляем "..." для тех, что ещё грузятся
+    renderPhotosPreview();
+    for (let k = i; k < filesToProcess.length; k++) {
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'photo-preview-item photo-preview-loading';
+      loadingDiv.innerText = '...';
+      previewEl.appendChild(loadingDiv);
+    }
+
     try {
-      const file = filesToProcess[i];
-      const url = await uploadPhotoToSupabase(file);
+      const url = await uploadPhotoToSupabase(filesToProcess[i]);
       uploadedPhotos.push(url);
-
-      // Убираем лоадер
-      const loader = document.getElementById('photo-loading-' + i);
-      if (loader) loader.remove();
-
     } catch (err) {
       console.error('Ошибка загрузки фото:', err);
-      const loader = document.getElementById('photo-loading-' + i);
-      if (loader) loader.remove();
-      showAlert('Не удалось загрузить фото');
+      lastError = err;
     }
   }
 
   renderPhotosPreview();
+
+  if (lastError) {
+    showAlert('Не удалось загрузить фото: ' + (lastError.message || 'неизвестная ошибка'));
+  }
 }
 
 async function uploadPhotoToSupabase(file) {
