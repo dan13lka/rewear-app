@@ -2180,6 +2180,44 @@
 .tag.gender-tag { display: inline-flex; align-items: center; gap: 6px; }
 .tag.gender-tag .gender-badge { height: 22px; padding: 0 7px; }
 .tag.gender-tag .gender-badge svg { width: 14px; height: 14px; }
+
+   /* КОЛИЧЕСТВО В КОРЗИНЕ */
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.qty-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #222;
+  border: 1px solid #333;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.qty-btn:active {
+  transform: scale(0.9);
+  background: #2a2a2a;
+}
+
+.qty-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 20px;
+  text-align: center;
+} 
     
   </style>
 </head>
@@ -2884,6 +2922,22 @@
     let favorites = JSON.parse(localStorage.getItem('rewear_favs') || '[]');
     let cart = JSON.parse(localStorage.getItem('rewear_cart') || '[]');
     let cartSizes = JSON.parse(localStorage.getItem('rewear_cart_sizes') || '{}');
+
+(function migrateCart() {
+  if (!Array.isArray(cart) || cart.length === 0) return;
+  // Проверяем — если первый элемент строка, значит старая структура
+  if (typeof cart[0] === 'string') {
+    const newCart = cart.map(id => {
+      const strId = String(id);
+      const size = (cartSizes && cartSizes[strId]) ? cartSizes[strId] : '';
+      return { id: strId, size: size, qty: 1 };
+    });
+    cart = newCart;
+    cartSizes = {}; // Больше не нужен — размер теперь внутри cart
+    localStorage.setItem('rewear_cart', JSON.stringify(cart));
+    localStorage.removeItem('rewear_cart_sizes');
+  }
+})();
     let activeModalIndex = null;
     let appliedPromo = null; // { code, discount_amount }
 
@@ -3277,8 +3331,14 @@ function toggleFav(e, id) {
   renderCart();
 }
    function updateCartBadge() {
+  // Считаем общее количество штук (сумма qty по всем строкам)
+  let totalQty = 0;
+  cart.forEach(item => {
+    totalQty += (item.qty || 1);
+  });
+
   const cartEl = document.getElementById('cart-count');
-  if (cartEl) cartEl.innerText = cart.length;
+  if (cartEl) cartEl.innerText = totalQty;
 
   const favEl = document.getElementById('fav-count');
   if (favEl) {
@@ -3286,89 +3346,107 @@ function toggleFav(e, id) {
     favEl.style.display = favorites.length > 0 ? 'flex' : 'none';
   }
 }
-
   function renderCart() {
   const listEl = document.getElementById('cart-list');
   const emptyEl = document.getElementById('cart-empty');
   const checkoutBar = document.getElementById('cart-checkout-bar');
-  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
 
   listEl.innerHTML = '';
   const promoBlock = document.getElementById('promo-block');
 
-  if (cartProducts.length === 0) {
+  // Фильтруем корзину — оставляем только товары, которые реально есть в loadedProducts
+  const validItems = cart.filter(item => {
+    return loadedProducts.some(p => String(p.id) === item.id);
+  });
+
+  if (validItems.length === 0) {
     emptyEl.style.display = 'block';
     checkoutBar.style.display = 'none';
     if (promoBlock) promoBlock.style.display = 'none';
-  } else {
-    emptyEl.style.display = 'none';
-    checkoutBar.style.display = 'flex';
-    if (promoBlock) promoBlock.style.display = 'block';
+    return;
+  }
 
-    let totalSum = 0;
+  emptyEl.style.display = 'none';
+  checkoutBar.style.display = 'flex';
+  if (promoBlock) promoBlock.style.display = 'block';
 
-    cartProducts.forEach(product => {
-      totalSum += Number(product.price || 0);
-      let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
+  let totalSum = 0;
+  let totalQty = 0;
+  let hasOutOfStock = false;
 
-      const size = cartSizes[String(product.id)];
-      const sizeHtml = size ? `<div class="cart-item-size">Размер: ${size}</div>` : '';
+  validItems.forEach(item => {
+    const product = loadedProducts.find(p => String(p.id) === item.id);
+    if (!product) return;
 
-      const isOutOfStock = product.in_stock === false;
-      const itemClass = isOutOfStock ? 'cart-item out-of-stock' : 'cart-item';
-      const outBadge = isOutOfStock ? '<div class="cart-item-out-badge">Нет в наличии</div>' : '';
+    const qty = item.qty || 1;
+    const price = Number(product.price || 0);
+    const lineSum = price * qty;
 
-      listEl.innerHTML += `
-        <div class="${itemClass}">
-          <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
-          <div class="cart-item-info">
-            <div class="cart-item-title">${product.title || 'Без названия'}</div>
-            ${sizeHtml}
-            ${outBadge}
-            <div class="cart-item-price">${Number(product.price || 0).toLocaleString('ru-RU')} сум</div>
+    totalSum += lineSum;
+    totalQty += qty;
+
+    let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
+
+    const sizeHtml = item.size ? `<div class="cart-item-size">Размер: ${escapeHtml(item.size)}</div>` : '';
+
+    const isOutOfStock = product.in_stock === false;
+    if (isOutOfStock) hasOutOfStock = true;
+
+    const itemClass = isOutOfStock ? 'cart-item out-of-stock' : 'cart-item';
+    const outBadge = isOutOfStock ? '<div class="cart-item-out-badge">Нет в наличии</div>' : '';
+
+    listEl.innerHTML += `
+      <div class="${itemClass}">
+        <img class="cart-item-img" src="${imageUrl}" alt="${product.title}">
+        <div class="cart-item-info">
+          <div class="cart-item-title">${escapeHtml(product.title || 'Без названия')}</div>
+          ${sizeHtml}
+          ${outBadge}
+          <div class="cart-item-price">${price.toLocaleString('ru-RU')} сум</div>
+          <div class="cart-item-qty">
+            <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', -1)">−</button>
+            <span class="qty-value">${qty}</span>
+            <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', 1)">+</button>
           </div>
-          <button class="cart-item-remove" onclick="removeFromCart('${product.id}')">✕</button>
         </div>
-      `;
-    });
+        <button class="cart-item-remove" onclick="removeFromCart('${item.id}', '${item.size}')">✕</button>
+      </div>
+    `;
+  });
 
-    document.getElementById('cart-total-count').innerText = cartProducts.length;
+  document.getElementById('cart-total-count').innerText = totalQty;
 
-    let finalSum = totalSum;
-    let discount = 0;
-    if (appliedPromo) {
-      discount = Math.min(appliedPromo.discount_amount, totalSum);
-      finalSum = Math.max(0, totalSum - discount);
+  let finalSum = totalSum;
+  let discount = 0;
+  if (appliedPromo) {
+    discount = Math.min(appliedPromo.discount_amount, totalSum);
+    finalSum = Math.max(0, totalSum - discount);
+  }
+
+  document.getElementById('cart-total-sum').innerText = finalSum.toLocaleString('ru-RU') + ' сум';
+
+  const discountRow = document.getElementById('cart-discount-row');
+  if (discountRow) {
+    if (discount > 0) {
+      discountRow.style.display = 'block';
+      document.getElementById('cart-discount-amount').innerText = '-' + discount.toLocaleString('ru-RU') + ' сум';
+    } else {
+      discountRow.style.display = 'none';
     }
+  }
 
-    document.getElementById('cart-total-sum').innerText = finalSum.toLocaleString('ru-RU') + ' сум';
-
-        const discountRow = document.getElementById('cart-discount-row');
-    if (discountRow) {
-      if (discount > 0) {
-        discountRow.style.display = 'block';
-        document.getElementById('cart-discount-amount').innerText = '-' + discount.toLocaleString('ru-RU') + ' сум';
-      } else {
-        discountRow.style.display = 'none';
-      }
-    }
-
-    // Блокируем кнопку "Купить" если есть товары не в наличии
-    const checkoutBtn = checkoutBar.querySelector('.btn-checkout');
-    const hasOutOfStock = cartProducts.some(p => p.in_stock === false);
-
-    if (checkoutBtn) {
-      if (hasOutOfStock) {
-        checkoutBtn.classList.add('disabled');
-        checkoutBtn.innerText = 'Уберите проданные';
-      } else {
-        checkoutBtn.classList.remove('disabled');
-        checkoutBtn.innerText = 'Купить';
-      }
+  // Блокируем кнопку "Купить" если есть товары не в наличии
+  const checkoutBtn = checkoutBar.querySelector('.btn-checkout');
+  if (checkoutBtn) {
+    if (hasOutOfStock) {
+      checkoutBtn.classList.add('disabled');
+      checkoutBtn.innerText = 'Уберите проданные';
+    } else {
+      checkoutBtn.classList.remove('disabled');
+      checkoutBtn.innerText = 'Купить';
     }
   }
 }
-
   async function checkoutCart() {
   const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
   if (cartProducts.length === 0) return;
