@@ -3365,7 +3365,6 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
     const ADMIN_USERNAME = 'KYJITYPA'; 
     const ADMIN_TG_ID = 6244774379;
-    const ADMIN_SECRET = 'rewear_admin_2026_secret';
     
     let loadedProducts = [];
     let selectedCategory = 'все';
@@ -5446,27 +5445,14 @@ async function loadAdminReviews() {
 
 async function approveReview(id) {
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
-
-    const { error } = await client
-      .from('reviews')
-      .update({ is_approved: true })
-      .eq('id', id);
-
-    if (error) throw error;
+    await adminCall('review_approve', { id });
 
     tg.showAlert('Отзыв одобрен и опубликован');
     loadAdminReviews();
 
   } catch (err) {
     console.error('Ошибка одобрения отзыва:', err);
-    tg.showAlert('Не удалось одобрить');
+    tg.showAlert('Не удалось одобрить: ' + err.message);
   }
 }
 
@@ -5475,27 +5461,14 @@ async function deleteReview(id) {
     if (!confirmed) return;
 
     try {
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        global: {
-          headers: {
-            'x-admin-key': ADMIN_SECRET
-          }
-        }
-      });
-
-      const { error } = await client
-        .from('reviews')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminCall('review_delete', { id });
 
       tg.showAlert('Отзыв удалён');
       loadAdminReviews();
 
     } catch (err) {
       console.error('Ошибка удаления отзыва:', err);
-      tg.showAlert('Не удалось удалить');
+      tg.showAlert('Не удалось удалить: ' + err.message);
     }
   });
 }
@@ -5590,39 +5563,21 @@ async function savePromo() {
     tg.showAlert('Введите код промокода');
     return;
   }
-
   if (!discount || discount <= 0) {
     tg.showAlert('Введите корректную скидку');
     return;
   }
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
-
-    const { error } = await client
-      .from('promo_codes')
-      .insert({
+    await adminCall('promo_save', {
+      data: {
         code: code,
         discount_amount: discount,
         min_order_sum: minSum,
         max_uses: maxUses,
         is_active: isActive
-      });
-
-    if (error) {
-      // Если промокод уже существует — покажем понятную ошибку
-      if (error.code === '23505') {
-        tg.showAlert('Промокод с таким кодом уже существует');
-        return;
       }
-      throw error;
-    }
+    });
 
     tg.showAlert('Промокод создан');
     closePromoForm();
@@ -5630,72 +5585,36 @@ async function savePromo() {
 
   } catch (err) {
     console.error('Ошибка создания промокода:', err);
-    tg.showAlert('Не удалось создать: ' + err.message);
+    if (err.message && err.message.includes('duplicate')) {
+      tg.showAlert('Промокод с таким кодом уже существует');
+    } else {
+      tg.showAlert('Не удалось создать: ' + err.message);
+    }
   }
 }
 
 async function togglePromoStatus(id) {
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
-
-    // Получаем текущий статус
-    const { data: promo, error: fetchError } = await client
-      .from('promo_codes')
-      .select('is_active')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const newStatus = promo.is_active === true ? false : true;
-
-    const { error } = await client
-      .from('promo_codes')
-      .update({ is_active: newStatus })
-      .eq('id', id);
-
-    if (error) throw error;
-
+    await adminCall('promo_toggle', { id });
     loadAdminPromo();
-
   } catch (err) {
     console.error('Ошибка смены статуса:', err);
-    tg.showAlert('Не удалось изменить статус');
+    tg.showAlert('Не удалось изменить статус: ' + err.message);
   }
 }
-
 async function deletePromo(id) {
   tg.showConfirm('Удалить промокод?', async (confirmed) => {
     if (!confirmed) return;
 
     try {
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        global: {
-          headers: {
-            'x-admin-key': ADMIN_SECRET
-          }
-        }
-      });
-
-      const { error } = await client
-        .from('promo_codes')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminCall('promo_delete', { id });
 
       tg.showAlert('Промокод удалён');
       loadAdminPromo();
 
     } catch (err) {
       console.error('Ошибка удаления:', err);
-      tg.showAlert('Не удалось удалить');
+      tg.showAlert('Не удалось удалить: ' + err.message);
     }
   });
 }
@@ -5843,23 +5762,12 @@ async function uploadShopAvatar(input) {
   }
 
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const path = `shop_${Date.now()}.${ext}`;
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: { headers: { 'x-admin-key': ADMIN_SECRET } }
-    });
+    const url = await uploadViaServer('avatars', file, ext, file.type);
 
-    const { error } = await client.storage
-      .from('avatars')
-      .upload(path, file, { contentType: file.type });
-
-    if (error) throw error;
-
-    const { data } = client.storage.from('avatars').getPublicUrl(path);
-
-    document.getElementById('sf-avatar').value = data.publicUrl;
-    setAvatarPreview(data.publicUrl);
+    document.getElementById('sf-avatar').value = url;
+    setAvatarPreview(url);
     tg.showAlert('Фото загружено. Нажмите «Сохранить», чтобы применить.');
 
   } catch (err) {
@@ -5869,7 +5777,6 @@ async function uploadShopAvatar(input) {
 
   input.value = '';
 }
-
 async function saveShop() {
   const name = document.getElementById('sf-name').value.trim();
   const avatarUrl = document.getElementById('sf-avatar').value.trim();
@@ -5889,75 +5796,43 @@ async function saveShop() {
     name,
     avatar_url: avatarUrl || null,
     description,
+    telegram,
+    instagram,
+    phone,
     display_order: displayOrder,
     is_active: isActive
   };
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
+    const wasEditing = !!editingShopId;
+    await adminCall('shop_save', { id: editingShopId, data: shopData });
 
-    if (editingShopId) {
-      const { error } = await client
-        .from('shops')
-        .update(shopData)
-        .eq('id', editingShopId);
-      if (error) throw error;
-      tg.showAlert('Магазин обновлён');
-    } else {
-      const { error } = await client
-        .from('shops')
-        .insert(shopData);
-      if (error) {
-        if (error.code === '23505') {
-          tg.showAlert('Магазин с таким названием уже существует');
-          return;
-        }
-        throw error;
-      }
-      tg.showAlert('Магазин создан');
-    }
-
+    tg.showAlert(wasEditing ? 'Магазин обновлён' : 'Магазин создан');
     closeShopForm();
     loadAdminShops();
 
   } catch (err) {
     console.error('Ошибка сохранения магазина:', err);
-    tg.showAlert('Не удалось сохранить: ' + err.message);
+    if (err.message && err.message.includes('duplicate')) {
+      tg.showAlert('Магазин с таким названием уже существует');
+    } else {
+      tg.showAlert('Не удалось сохранить: ' + err.message);
+    }
   }
 }
-
 async function deleteShop(id) {
   tg.showConfirm('Удалить магазин? Товары магазина останутся, но потеряют привязку.', async (confirmed) => {
     if (!confirmed) return;
 
     try {
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-        global: {
-          headers: {
-            'x-admin-key': ADMIN_SECRET
-          }
-        }
-      });
-
-      const { error } = await client
-        .from('shops')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminCall('shop_delete', { id });
 
       tg.showAlert('Магазин удалён');
       loadAdminShops();
 
     } catch (err) {
       console.error('Ошибка удаления:', err);
-      tg.showAlert('Не удалось удалить');
+      tg.showAlert('Не удалось удалить: ' + err.message);
     }
   });
 }
@@ -6512,40 +6387,23 @@ async function handlePhotoUpload(event) {
   }
 }
 
-async function uploadPhotoToSupabase(file) {
-  // 1. Сжимаем фото
-  const compressedBlob = await compressImage(file, 1080, 0.85);
+// Загрузка файла через разрешение от сервера
+async function uploadViaServer(bucket, blob, ext, contentType) {
+  const { path, token } = await adminCall('upload_url', { bucket, ext });
 
-  // 2. Генерируем уникальное имя
-  const ext = 'jpg';
-  const fileName = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
-  const filePath = `products/${fileName}`;
-
-  // 3. Создаём клиент с админским ключом
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    global: {
-      headers: {
-        'x-admin-key': ADMIN_SECRET
-      }
-    }
-  });
-
-  // 4. Загружаем
-  const { data, error } = await client.storage
-    .from('product-images')
-    .upload(filePath, compressedBlob, {
-      contentType: 'image/jpeg',
-      upsert: false
-    });
-
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { error } = await client.storage
+    .from(bucket)
+    .uploadToSignedUrl(path, token, blob, { contentType });
   if (error) throw error;
 
-  // 5. Получаем публичный URL
-  const { data: urlData } = client.storage
-    .from('product-images')
-    .getPublicUrl(filePath);
+  const { data } = client.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
 
-  return urlData.publicUrl;
+async function uploadPhotoToSupabase(file) {
+  const compressedBlob = await compressImage(file, 1080, 0.85);
+  return await uploadViaServer('product-images', compressedBlob, 'jpg', 'image/jpeg');
 }
 
 // Сжатие фото через Canvas
