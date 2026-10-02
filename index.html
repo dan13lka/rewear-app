@@ -5258,38 +5258,27 @@ async function deleteProduct(id) {
   });
 }
 
+    // Отправка админских действий на сервер
+async function adminCall(action, payload = {}) {
+  const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: tg.initData, action, payload })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка сервера');
+  return json.data;
+}
+
 async function toggleProductStock(id) {
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
-    
-    // Получаем текущий статус
-    const { data: p, error: fetchError } = await client
-      .from('products')
-      .select('in_stock')
-      .eq('id', id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const newStock = p.in_stock === false ? true : false;
-
-    const { error } = await client
-      .from('products')
-      .update({ in_stock: newStock })
-      .eq('id', id);
-
-    if (error) throw error;
+    await adminCall('product_toggle_stock', { id });
 
     loadAdminProducts();
 
     // Обновляем каталог
-       const { data: allProducts } = await client.from('products').select('*');
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: allProducts } = await client.from('products').select('*');
     if (allProducts) {
       loadedProducts = allProducts;
       await enrichProductsWithShopNames();
@@ -5299,7 +5288,7 @@ async function toggleProductStock(id) {
     }
   } catch (err) {
     console.error('Ошибка смены статуса:', err);
-    tg.showAlert('Не удалось изменить статус');
+    tg.showAlert('Не удалось изменить статус: ' + err.message);
   }
 }
 
