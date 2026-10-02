@@ -5152,20 +5152,16 @@ async function saveProduct() {
     return;
   }
 
-  // Размеры → массив
   const sizesArr = sizesStr
     ? sizesStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
     : [];
 
-   // Фото → массив (объединяем загруженные + вручную введённые URL)
   const urlsFromTextarea = imagesStr
     ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
     : [];
-
-  // Объединяем без дубликатов
   const allImages = [...new Set([...uploadedPhotos, ...urlsFromTextarea])];
-  
-    const productData = {
+
+  const productData = {
     title,
     price,
     category,
@@ -5176,43 +5172,15 @@ async function saveProduct() {
     description,
     in_stock: inStock
   };
-  
+
   try {
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
+    const wasEditing = !!editingProductId;
+    await adminCall('product_save', { id: editingProductId, data: productData });
 
-    if (editingProductId) {
-      const { error } = await client
-        .from('products')
-        .update(productData)
-        .eq('id', editingProductId);
-      if (error) throw error;
-      tg.showAlert('Товар обновлён');
-    } else {
-      const { error } = await client
-        .from('products')
-        .insert(productData);
-      if (error) throw error;
-      tg.showAlert('Товар добавлен');
-    }
-
+    tg.showAlert(wasEditing ? 'Товар обновлён' : 'Товар добавлен');
     closeProductForm();
     loadAdminProducts();
-
-    // Обновляем каталог
-       const { data: allProducts } = await client.from('products').select('*');
-    if (allProducts) {
-      loadedProducts = allProducts;
-      await enrichProductsWithShopNames();
-      populateShopFilter(loadedProducts);
-      updateCategoryChips();
-      applyFilters();
-    }
+    await refreshCatalog();
 
   } catch (err) {
     console.error('Ошибка сохранения товара:', err);
@@ -5225,35 +5193,15 @@ async function deleteProduct(id) {
     if (!confirmed) return;
 
     try {
-          const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      global: {
-        headers: {
-          'x-admin-key': ADMIN_SECRET
-        }
-      }
-    });
-      const { error } = await client
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminCall('product_delete', { id });
 
       tg.showAlert('Товар удалён');
       loadAdminProducts();
+      await refreshCatalog();
 
-      // Обновляем каталог
-            const { data: allProducts } = await client.from('products').select('*');
-      if (allProducts) {
-        loadedProducts = allProducts;
-        await enrichProductsWithShopNames();
-        populateShopFilter(loadedProducts);
-        updateCategoryChips();
-        applyFilters();
-      }
     } catch (err) {
       console.error('Ошибка удаления:', err);
-      tg.showAlert('Не удалось удалить');
+      tg.showAlert('Не удалось удалить: ' + err.message);
     }
   });
 }
@@ -5268,6 +5216,18 @@ async function adminCall(action, payload = {}) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка сервера');
   return json.data;
+}
+// Перезагружает каталог после изменений в админке
+async function refreshCatalog() {
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data: allProducts } = await client.from('products').select('*');
+  if (allProducts) {
+    loadedProducts = allProducts;
+    await enrichProductsWithShopNames();
+    populateShopFilter(loadedProducts);
+    updateCategoryChips();
+    applyFilters();
+  }
 }
 
 async function toggleProductStock(id) {
