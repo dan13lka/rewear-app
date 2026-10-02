@@ -2603,7 +2603,118 @@
   color: #666;
   font-size: 12px;
 }
-    
+   /* FULLSCREEN ПРОСМОТРЩИК ФОТО */
+.photo-viewer {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000000;
+  z-index: 2000;
+  overflow: hidden;
+}
+.photo-viewer.active {
+  display: block;
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s;
+}
+.photo-viewer-close:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.photo-viewer-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.photo-viewer-track::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-viewer-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-viewer-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.25s ease-out;
+  will-change: transform;
+  touch-action: pan-y pinch-zoom;
+}
+
+.photo-viewer-slide.zoomed {
+  overflow: auto;
+}
+
+.photo-viewer-slide.zoomed img {
+  cursor: grab;
+  touch-action: none;
+}
+
+.photo-viewer-dots {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 5;
+}
+
+.photo-viewer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.2s;
+}
+
+.photo-viewer-dot.active {
+  background: #ffffff;
+  width: 20px;
+  border-radius: 3px;
+} 
   </style>
 </head>
 <body>
@@ -3329,6 +3440,17 @@
     <button class="btn-cancel-review" onclick="closeReviewComposer()">Отмена</button>
     <button class="btn-send-review" onclick="submitReview()">Отправить</button>
   </div>
+</div>
+<!-- FULLSCREEN ПРОСМОТРЩИК ФОТО -->
+<div id="photo-viewer" class="photo-viewer">
+  <button class="photo-viewer-close" onclick="closePhotoViewer()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <div class="photo-viewer-track" id="photo-viewer-track"></div>
+  <div class="photo-viewer-dots" id="photo-viewer-dots"></div>
 </div>
   <!-- НИЖНЕЕ МЕНЮ -->
  <div class="nav-bar">
@@ -4227,15 +4349,20 @@ function renderGallery(images) {
   track.innerHTML = '';
   dotsEl.innerHTML = '';
 
+  // Сохраняем массив картинок для просмотрщика
+  window.__currentGalleryImages = images;
+
   images.forEach((url, i) => {
     track.innerHTML += `
       <div class="gallery-slide">
-        <img src="${url}" alt="Фото ${i + 1}" onerror="this.src='https://images.unsplash.com/photo-1544441893-675973e31985?w=500'">
+        <img src="${url}" alt="Фото ${i + 1}" 
+             onclick="openGalleryPhoto(${i})"
+             onerror="this.src='https://images.unsplash.com/photo-1544441893-675973e31985?w=500'"
+             style="cursor: zoom-in;">
       </div>
     `;
     dotsEl.innerHTML += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></div>`;
   });
-
   // Точки показываем только если фото больше 1
 if (images.length > 1) {
   dotsEl.style.display = 'flex';
@@ -4253,6 +4380,11 @@ track.onscroll = () => {
     updateGalleryUI(currentIndex);
   }, 50);
 };
+}
+    function openGalleryPhoto(index) {
+  const images = window.__currentGalleryImages || [];
+  if (images.length === 0) return;
+  openPhotoViewer(images, index);
 }
 
 function updateGalleryUI(index) {
@@ -6490,7 +6622,166 @@ function updateImagesTextareaFromPhotos() {
   if (!ta) return;
   ta.value = uploadedPhotos.join(', ');
 }
-    
+    // === FULLSCREEN ПРОСМОТРЩИК ФОТО ===
+let viewerImages = [];
+let viewerCurrentIndex = 0;
+
+function openPhotoViewer(images, startIndex = 0) {
+  if (!images || images.length === 0) return;
+
+  viewerImages = images;
+  viewerCurrentIndex = startIndex;
+
+  const trackEl = document.getElementById('photo-viewer-track');
+  const dotsEl = document.getElementById('photo-viewer-dots');
+
+  trackEl.innerHTML = '';
+  dotsEl.innerHTML = '';
+
+  images.forEach((url, i) => {
+    trackEl.innerHTML += `
+      <div class="photo-viewer-slide" data-index="${i}">
+        <img src="${url}" alt="" 
+             ontouchstart="handlePhotoViewerTouchStart(event, ${i})"
+             ontouchend="handlePhotoViewerTouchEnd(event, ${i})"
+             ontouchmove="handlePhotoViewerTouchMove(event, ${i})">
+      </div>
+      `;
+    dotsEl.innerHTML += `<div class="photo-viewer-dot ${i === startIndex ? 'active' : ''}"></div>`;
+  });
+
+  // Открываем
+  document.getElementById('photo-viewer').classList.add('active');
+
+  // Скроллим к нужному фото
+  setTimeout(() => {
+    const slideWidth = trackEl.clientWidth;
+    trackEl.scrollLeft = slideWidth * startIndex;
+  }, 50);
+
+  // Обновляем активную точку при скролле
+  let scrollTimeout;
+  trackEl.onscroll = () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const slideWidth = trackEl.clientWidth;
+      const currentIndex = Math.round(trackEl.scrollLeft / slideWidth);
+      viewerCurrentIndex = currentIndex;
+      document.querySelectorAll('.photo-viewer-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentIndex);
+      });
+    }, 50);
+  };
+
+  tg.BackButton.show();
+  tg.BackButton.onClick(closePhotoViewer);
+}
+
+function closePhotoViewer() {
+  document.getElementById('photo-viewer').classList.remove('active');
+  document.getElementById('photo-viewer-track').innerHTML = '';
+  tg.BackButton.hide();
+  viewerImages = [];
+  viewerCurrentIndex = 0;
+}
+
+// === ОБРАБОТКА ЖЕСТОВ (двойной тап, pinch zoom) ===
+const viewerTouchState = {};
+
+function handlePhotoViewerTouchStart(e, index) {
+  const slide = e.currentTarget.closest('.photo-viewer-slide');
+  const img = slide.querySelector('img');
+
+  if (!viewerTouchState[index]) {
+    viewerTouchState[index] = {
+      lastTap: 0,
+      startDist: 0,
+      startScale: 1,
+      scale: 1,
+      initialTranslate: 0,
+      touches: 0
+    };
+  }
+
+  const state = viewerTouchState[index];
+  state.touches = e.touches.length;
+
+  if (e.touches.length === 1) {
+    // Проверяем двойной тап
+    const now = Date.now();
+    const timeSinceLastTap = now - state.lastTap;
+
+    if (timeSinceLastTap < 300) {
+      // Двойной тап
+      if (state.scale > 1) {
+        state.scale = 1;
+        slide.classList.remove('zoomed');
+      } else {
+        state.scale = 2;
+        slide.classList.add('zoomed');
+      }
+      img.style.transform = `scale(${state.scale})`;
+      img.style.transition = 'transform 0.25s ease-out';
+      state.lastTap = 0;
+    } else {
+      state.lastTap = now;
+    }
+  } else if (e.touches.length === 2) {
+    // Два пальца — начинаем pinch
+    state.startDist = getTouchDistance(e.touches);
+    state.startScale = state.scale;
+    img.style.transition = 'none';
+  }
+}
+
+function handlePhotoViewerTouchMove(e, index) {
+  const state = viewerTouchState[index];
+  if (!state) return;
+
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const slide = e.currentTarget.closest('.photo-viewer-slide');
+    const img = slide.querySelector('img');
+
+    const currentDist = getTouchDistance(e.touches);
+    const ratio = currentDist / state.startDist;
+    let newScale = state.startScale * ratio;
+
+    // Ограничиваем 1 - 4
+    newScale = Math.max(1, Math.min(4, newScale));
+    state.scale = newScale;
+
+    if (newScale > 1) {
+      slide.classList.add('zoomed');
+    } else {
+      slide.classList.remove('zoomed');
+    }
+
+    img.style.transform = `scale(${newScale})`;
+  }
+}
+
+function handlePhotoViewerTouchEnd(e, index) {
+  const state = viewerTouchState[index];
+  if (!state) return;
+
+  // Если после отпускания scale вернулся к 1 — убираем zoomed
+  const slide = e.currentTarget.closest('.photo-viewer-slide');
+  const img = slide.querySelector('img');
+
+  if (state.scale <= 1.05) {
+    state.scale = 1;
+    slide.classList.remove('zoomed');
+    img.style.transform = 'scale(1)';
+    img.style.transition = 'transform 0.25s ease-out';
+  }
+}
+
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
