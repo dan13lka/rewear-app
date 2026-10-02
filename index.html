@@ -3676,7 +3676,7 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
     genderBadgeHtml(p.gender) + `<span>${genderLabel(p.gender)}</span>`;
 
   // Проверяем наличие
-  const inStock = p.in_stock !== false;
+   const inStock = p.in_stock !== false;
   const outOfStockEl = document.getElementById('m-out-of-stock');
   const sizeSectionEl = document.getElementById('m-size-section');
   const cartBtn = document.getElementById('m-cart-btn');
@@ -3685,7 +3685,10 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
     outOfStockEl.style.display = 'none';
     renderSizeOptions(p.sizes || []);
     cartBtn.classList.remove('disabled');
-    cartBtn.innerText = cart.includes(String(p.id)) ? '✓ В корзине' : 'В корзину';
+
+    // Проверяем — есть ли этот товар в корзине (по id, любой размер)
+    const inCart = cart.some(item => String(item.id) === String(p.id));
+    cartBtn.innerText = inCart ? '✓ В корзине' : 'В корзину';
   } else {
     if (sizeSectionEl) sizeSectionEl.style.display = 'none';
     outOfStockEl.style.display = 'block';
@@ -4198,9 +4201,12 @@ async function applyPromo() {
     return;
   }
 
-  // Считаем сумму корзины
-  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
-  const cartTotal = cartProducts.reduce((sum, p) => sum + Number(p.price || 0), 0);
+    // Считаем сумму корзины (с учётом количества)
+  let cartTotal = 0;
+  cart.forEach(item => {
+    const p = loadedProducts.find(prod => String(prod.id) === item.id);
+    if (p) cartTotal += Number(p.price || 0) * (item.qty || 1);
+  });
 
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
