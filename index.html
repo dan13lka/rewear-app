@@ -3295,20 +3295,37 @@ function toggleFav(e, id) {
     return;
   }
 
-  // Итоговый размер: выбранный ИЛИ единственный ИЛИ null
-  const finalSize = selectedSize || (cleanSizes[0] || null);
+  // Итоговый размер: выбранный ИЛИ единственный ИЛИ '' (пустой)
+  const finalSize = selectedSize || (cleanSizes[0] || '');
 
-  if (cart.includes(strId)) {
-    cart = cart.filter(id => id !== strId);
-    delete cartSizes[strId];
-  } else {
-    cart.push(strId);
-    if (finalSize) {
-      cartSizes[strId] = finalSize;
+  // Ищем в корзине строку с этим товаром + размером
+  const existingIndex = cart.findIndex(item => item.id === strId && item.size === finalSize);
+
+  if (existingIndex !== -1) {
+    // Уже есть — увеличиваем количество (макс 10)
+    if (cart[existingIndex].qty < 10) {
+      cart[existingIndex].qty += 1;
+    } else {
+      tg.showAlert('Максимум 10 штук одного товара');
+      return;
     }
+  } else {
+    // Нет — добавляем новую строку
+    cart.push({
+      id: strId,
+      size: finalSize,
+      qty: 1
+    });
   }
+
   saveState();
-  closeProduct();
+  renderCart();
+
+  // Обновляем кнопку в модалке
+  const cartBtn = document.getElementById('m-cart-btn');
+  if (cartBtn) {
+    cartBtn.innerText = '✓ В корзине';
+  }
 }
 
   function removeFromCart(id, size) {
@@ -3333,8 +3350,14 @@ function toggleFav(e, id) {
     if (promoSuccess) promoSuccess.style.display = 'none';
   }
 
-  saveState();
+    saveState();
   renderCart();
+
+  // Обновляем кнопку в модалке
+  const cartBtn = document.getElementById('m-cart-btn');
+  if (cartBtn) {
+    cartBtn.innerText = '✓ В корзине';
+  }
 }
    function updateCartBadge() {
   // Считаем общее количество штук (сумма qty по всем строкам)
@@ -3454,43 +3477,66 @@ function toggleFav(e, id) {
   }
 }
   async function checkoutCart() {
-  const cartProducts = loadedProducts.filter(p => cart.includes(String(p.id)));
-  if (cartProducts.length === 0) return;
+  // Проверка что корзина не пуста
+  const validItems = cart.filter(item => {
+    return loadedProducts.some(p => String(p.id) === item.id);
+  });
+
+  if (validItems.length === 0) return;
 
   // Проверка: есть ли товары не в наличии
-  const outOfStock = cartProducts.filter(p => p.in_stock === false);
+  const outOfStock = validItems.filter(item => {
+    const p = loadedProducts.find(prod => String(prod.id) === item.id);
+    return p && p.in_stock === false;
+  });
+
   if (outOfStock.length > 0) {
     tg.showAlert('Уберите из корзины товары, которых нет в наличии');
     return;
   }
 
+  // Формируем список товаров с учётом количества
   let total = 0;
-  const itemsForOrder = cartProducts.map(p => {
-  total += Number(p.price || 0);
-  return {
-    id: p.id,
-    title: p.title || 'Без названия',
-    price: Number(p.price || 0),
-    size: cartSizes[String(p.id)] || '',
-    shop: p.shop || '',
-    shop_id: p.shop_id || null
-  };
-});
+  const itemsForOrder = [];
+
+  validItems.forEach(item => {
+    const p = loadedProducts.find(prod => String(prod.id) === item.id);
+    if (!p) return;
+
+    const qty = item.qty || 1;
+    const price = Number(p.price || 0);
+    const lineSum = price * qty;
+
+    total += lineSum;
+
+    // Добавляем каждую единицу как отдельный item (если qty > 1)
+    // ИЛИ как один item с полем qty — оставим как один item с qty
+    itemsForOrder.push({
+      id: p.id,
+      title: p.title || 'Без названия',
+      price: price,
+      qty: qty,
+      size: item.size || '',
+      shop: p.shop || '',
+      shop_id: p.shop_id || null
+    });
+  });
 
   const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
   const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
   const buyerUsername = user.username || '';
-      
-        // Учитываем скидку
-    let finalTotal = total;
-    let promoCode = null;
-    let promoDiscount = 0;
-    if (appliedPromo) {
-      promoDiscount = Math.min(appliedPromo.discount_amount, total);
-      finalTotal = Math.max(0, total - promoDiscount);
-      promoCode = appliedPromo.code;
-    }
-      // 1. Сохраняем заказ в Supabase
+
+  // Учитываем скидку
+  let finalTotal = total;
+  let promoCode = null;
+  let promoDiscount = 0;
+  if (appliedPromo) {
+    promoDiscount = Math.min(appliedPromo.discount_amount, total);
+    finalTotal = Math.max(0, total - promoDiscount);
+    promoCode = appliedPromo.code;
+  }
+
+  // 1. Сохраняем заказ в Supabase
   let orderId = null;
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -3513,14 +3559,14 @@ function toggleFav(e, id) {
     return;
   }
 
-  // 2. Отправляем уведомление тебе в ТГ
+  // 2. Отправляем уведомление
   try {
     await fetch('https://lseatoyffptmjljinswp.supabase.co/functions/v1/notify-order', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-            body: JSON.stringify({
+      body: JSON.stringify({
         id: orderId,
         buyer_name: buyerName,
         buyer_username: buyerUsername,
@@ -3532,16 +3578,17 @@ function toggleFav(e, id) {
     });
   } catch (err) {
     console.error('Ошибка отправки уведомления:', err);
-    // Не прерываем — заказ уже сохранён
   }
 
-  // 3. Открываем чат с тобой (как раньше)
-    let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
-  cartProducts.forEach((p, idx) => {
-  const shopInfo = p.shop ? ` [Шоп: ${p.shop}]` : '';
-  const size = cartSizes[String(p.id)] || 'не указан';
-  message += `${idx + 1}. ${p.title} (Размер: ${size})${shopInfo} — ${Number(p.price || 0).toLocaleString('ru-RU')} сум\n`;
-});
+  // 3. Формируем сообщение
+  let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
+  itemsForOrder.forEach((item, idx) => {
+    const shopInfo = item.shop ? ` [Шоп: ${item.shop}]` : '';
+    const sizeStr = item.size ? ` (Размер: ${item.size})` : '';
+    const qtyStr = item.qty > 1 ? ` × ${item.qty}` : '';
+    const lineSum = item.price * item.qty;
+    message += `${idx + 1}. ${item.title}${sizeStr}${qtyStr}${shopInfo} — ${lineSum.toLocaleString('ru-RU')} сум\n`;
+  });
   if (promoCode) {
     message += `\nПромокод ${promoCode}: -${promoDiscount.toLocaleString('ru-RU')} сум`;
   }
@@ -3549,7 +3596,7 @@ function toggleFav(e, id) {
 
   const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
 
-    // 4. Записываем использование промокода
+  // 4. Записываем использование промокода
   if (appliedPromo && user.id) {
     try {
       const clientPromo = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -3578,7 +3625,6 @@ function toggleFav(e, id) {
 
   // 5. Чистим корзину
   cart = [];
-  cartSizes = {};
   appliedPromo = null;
 
   const promoInputW = document.getElementById('promo-input-wrapper');
@@ -4614,11 +4660,13 @@ async function saveProduct() {
     loadAdminProducts();
 
     // Обновляем каталог
-    const { data: allProducts } = await client.from('products').select('*');
+       const { data: allProducts } = await client.from('products').select('*');
     if (allProducts) {
       loadedProducts = allProducts;
+      await enrichProductsWithShopNames();
       populateShopFilter(loadedProducts);
-      renderProducts(loadedProducts);
+      updateCategoryChips();
+      applyFilters();
     }
 
   } catch (err) {
@@ -4650,11 +4698,13 @@ async function deleteProduct(id) {
       loadAdminProducts();
 
       // Обновляем каталог
-      const { data: allProducts } = await client.from('products').select('*');
+            const { data: allProducts } = await client.from('products').select('*');
       if (allProducts) {
         loadedProducts = allProducts;
+        await enrichProductsWithShopNames();
         populateShopFilter(loadedProducts);
-        renderProducts(loadedProducts);
+        updateCategoryChips();
+        applyFilters();
       }
     } catch (err) {
       console.error('Ошибка удаления:', err);
@@ -4694,11 +4744,13 @@ async function toggleProductStock(id) {
     loadAdminProducts();
 
     // Обновляем каталог
-    const { data: allProducts } = await client.from('products').select('*');
+       const { data: allProducts } = await client.from('products').select('*');
     if (allProducts) {
       loadedProducts = allProducts;
+      await enrichProductsWithShopNames();
       populateShopFilter(loadedProducts);
-      renderProducts(loadedProducts);
+      updateCategoryChips();
+      applyFilters();
     }
   } catch (err) {
     console.error('Ошибка смены статуса:', err);
