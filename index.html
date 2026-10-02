@@ -2604,7 +2604,7 @@
   color: #666;
   font-size: 12px;
 }
-   /* FULLSCREEN ПРОСМОТРЩИК ФОТО */
+ /* FULLSCREEN ПРОСМОТРЩИК ФОТО */
 .photo-viewer {
   display: none;
   position: fixed;
@@ -2635,10 +2635,6 @@
   padding: 0;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s;
-}
-.photo-viewer-close:active {
-  background: rgba(255, 255, 255, 0.15);
 }
 
 .photo-viewer-track {
@@ -2650,6 +2646,7 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 .photo-viewer-track::-webkit-scrollbar {
   display: none;
@@ -2662,9 +2659,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   overflow: hidden;
-  touch-action: pan-y;
 }
 
 .photo-viewer-slide img {
@@ -2675,34 +2670,40 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
-  transition: transform 0.2s ease-out;
-  will-change: transform;
-  pointer-events: none;
+  transition: transform 0.25s ease-out;
 }
 
-.photo-viewer-slide.zoomed {
-  overflow: auto;
-  touch-action: auto;
-  -webkit-overflow-scrolling: touch;
-  display: block;
-  padding: 0;
-  text-align: center;
+.photo-viewer-slide img.zoomed {
+  transform: scale(2);
 }
 
-.photo-viewer-slide.zoomed::before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+.photo-viewer-dots {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 5;
 }
 
-.photo-viewer-slide.zoomed img {
-  pointer-events: auto;
-  transition: none;
-  max-width: none;
-  max-height: none;
-  vertical-align: middle;
-  display: inline-block;
+.photo-viewer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.2s;
+}
+
+.photo-viewer-dot.active {
+  background: #ffffff;
+  width: 20px;
+  border-radius: 3px;
 }
   </style>
 </head>
@@ -6611,7 +6612,7 @@ function updateImagesTextareaFromPhotos() {
   if (!ta) return;
   ta.value = uploadedPhotos.join(', ');
 }
-    // === FULLSCREEN ПРОСМОТРЩИК ФОТО ===
+// === FULLSCREEN ПРОСМОТРЩИК ФОТО ===
 let viewerImages = [];
 let viewerCurrentIndex = 0;
 
@@ -6630,25 +6631,20 @@ function openPhotoViewer(images, startIndex = 0) {
   images.forEach((url, i) => {
     trackEl.innerHTML += `
       <div class="photo-viewer-slide" data-index="${i}">
-        <img src="${url}" alt="" 
-             ontouchstart="handlePhotoViewerTouchStart(event, ${i})"
-             ontouchend="handlePhotoViewerTouchEnd(event, ${i})"
-             ontouchmove="handlePhotoViewerTouchMove(event, ${i})">
+        <img src="${url}" alt="" ondblclick="toggleViewerZoom(this, event)">
       </div>
-      `;
+    `;
     dotsEl.innerHTML += `<div class="photo-viewer-dot ${i === startIndex ? 'active' : ''}"></div>`;
   });
 
-  // Открываем
   document.getElementById('photo-viewer').classList.add('active');
 
-  // Скроллим к нужному фото
   setTimeout(() => {
     const slideWidth = trackEl.clientWidth;
     trackEl.scrollLeft = slideWidth * startIndex;
   }, 50);
 
-  // Обновляем активную точку при скролле
+  // Обновление активной точки при скролле
   let scrollTimeout;
   trackEl.onscroll = () => {
     clearTimeout(scrollTimeout);
@@ -6662,6 +6658,9 @@ function openPhotoViewer(images, startIndex = 0) {
     }, 50);
   };
 
+  // Детект двойного тапа на мобиле
+  setupDoubleTapOnViewer();
+
   tg.BackButton.show();
   tg.BackButton.onClick(closePhotoViewer);
 }
@@ -6674,118 +6673,41 @@ function closePhotoViewer() {
   viewerCurrentIndex = 0;
 }
 
-// === ОБРАБОТКА ЖЕСТОВ (двойной тап, pinch zoom) ===
-const viewerTouchState = {};
+// Двойной тап — переключение зума
+function toggleViewerZoom(imgEl) {
+  imgEl.classList.toggle('zoomed');
+}
 
-function handlePhotoViewerTouchStart(e, index) {
-  const slide = e.currentTarget.closest('.photo-viewer-slide');
-  const img = slide.querySelector('img');
+// Детект двойного тапа на мобильных
+function setupDoubleTapOnViewer() {
+  const track = document.getElementById('photo-viewer-track');
+  let lastTap = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
 
-  if (!viewerTouchState[index]) {
-    viewerTouchState[index] = {
-      lastTap: 0,
-      startDist: 0,
-      startScale: 1,
-      scale: 1,
-      isPanning: false,
-      startX: 0,
-      startY: 0,
-      startScrollLeft: 0,
-      startScrollTop: 0
-    };
-  }
+  track.ontouchend = (e) => {
+    if (e.touches.length > 0) return;
+    if (e.changedTouches.length !== 1) return;
 
-  const state = viewerTouchState[index];
-
-  if (e.touches.length === 1) {
+    const touch = e.changedTouches[0];
     const now = Date.now();
-    const timeSinceLastTap = now - state.lastTap;
 
-    // Если сейчас режим зума — панорамируем
-    if (state.scale > 1) {
-      state.isPanning = true;
-      state.startX = e.touches[0].clientX;
-      state.startY = e.touches[0].clientY;
-      state.startScrollLeft = slide.scrollLeft;
-      state.startScrollTop = slide.scrollTop;
-    }
-
-    if (timeSinceLastTap < 300) {
-      // Двойной тап
-      if (state.scale > 1) {
-        state.scale = 1;
-        slide.classList.remove('zoomed');
-        img.style.transform = '';
-      } else {
-        state.scale = 2;
-        slide.classList.add('zoomed');
-        // Устанавливаем размеры картинки под зум
-        setTimeout(() => {
-          img.style.transform = '';
-        }, 10);
+    if (now - lastTap < 300) {
+      const dx = Math.abs(touch.clientX - lastTapX);
+      const dy = Math.abs(touch.clientY - lastTapY);
+      if (dx < 30 && dy < 30) {
+        // Двойной тап
+        const img = e.target.closest('.photo-viewer-slide')?.querySelector('img');
+        if (img) toggleViewerZoom(img);
+        lastTap = 0;
+        return;
       }
-      state.lastTap = 0;
-    } else {
-      state.lastTap = now;
     }
-  } else if (e.touches.length === 2) {
-    // Два пальца — pinch
-    state.startDist = getTouchDistance(e.touches);
-    state.startScale = state.scale;
-    state.isPanning = false;
-  }
-}
 
-function handlePhotoViewerTouchMove(e, index) {
-  const state = viewerTouchState[index];
-  if (!state) return;
-
-  if (e.touches.length === 2) {
-    // Pinch
-    e.preventDefault();
-    const slide = e.currentTarget.closest('.photo-viewer-slide');
-    const img = slide.querySelector('img');
-
-    const currentDist = getTouchDistance(e.touches);
-    const ratio = currentDist / state.startDist;
-    let newScale = state.startScale * ratio;
-    newScale = Math.max(1, Math.min(4, newScale));
-    state.scale = newScale;
-
-    if (newScale > 1.05) {
-      if (!slide.classList.contains('zoomed')) {
-        slide.classList.add('zoomed');
-      }
-      img.style.transform = `scale(${newScale})`;
-    } else {
-      img.style.transform = '';
-    }
-  } else if (e.touches.length === 1 && state.isPanning && state.scale > 1) {
-    // Панорамирование
-    e.preventDefault();
-    const slide = e.currentTarget.closest('.photo-viewer-slide');
-    const dx = e.touches[0].clientX - state.startX;
-    const dy = e.touches[0].clientY - state.startY;
-    slide.scrollLeft = state.startScrollLeft - dx;
-    slide.scrollTop = state.startScrollTop - dy;
-  }
-}
-
-function handlePhotoViewerTouchEnd(e, index) {
-  const state = viewerTouchState[index];
-  if (!state) return;
-
-  state.isPanning = false;
-
-  const slide = e.currentTarget.closest('.photo-viewer-slide');
-  const img = slide.querySelector('img');
-
-  // Если scale стал почти 1 — выключаем зум
-  if (state.scale <= 1.05) {
-    state.scale = 1;
-    slide.classList.remove('zoomed');
-    img.style.transform = '';
-  }
+    lastTap = now;
+    lastTapX = touch.clientX;
+    lastTapY = touch.clientY;
+  };
 }
 
 function getTouchDistance(touches) {
