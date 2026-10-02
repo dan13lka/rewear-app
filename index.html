@@ -897,6 +897,48 @@
   color: #8c8c8c;
 }
 
+.order-item-meta {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.order-review-row {
+  margin-top: 8px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #8c8c8c;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.order-review-row::before {
+  content: '✎';
+  font-size: 13px;
+  color: #666;
+}
+.order-review-row:active {
+  background: #222;
+  border-color: #3a3a3a;
+}
+
+.order-review-row.reviewed {
+  color: #4ade80;
+  cursor: default;
+  background: rgba(74, 222, 128, 0.06);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+.order-review-row.reviewed::before {
+  content: '✓';
+  color: #4ade80;
+}
+
+.order-total-row {
+    
 .order-total-row {
   display: flex;
   justify-content: space-between;
@@ -3027,13 +3069,7 @@
   </div>
 
   <!-- БЛОК ОТЗЫВОВ -->
-   <button class="btn-open-reviews" onclick="openReviewsScreen()">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-    <span>Отзывы</span>
-  </button>
-  <button class="btn-open-reviews" onclick="openOrdersScreen()">
+     <button class="btn-open-reviews" onclick="openOrdersScreen()">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
     <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -3041,6 +3077,12 @@
   </svg>
   <span>Мои заказы</span>
 </button>
+   <button class="btn-open-reviews" onclick="openReviewsScreen()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <span>Отзывы</span>
+  </button>
   <button id="admin-btn" class="btn-open-reviews" onclick="openAdminScreen()" style="display: none;">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="3"></circle>
@@ -3164,14 +3206,6 @@
     <div class="reviews-topbar-title">Отзывы</div>
     <div style="width: 22px;"></div>
   </div>
-
-  <!-- Шапка со средним рейтингом -->
-  <div class="reviews-summary" id="reviews-summary">
-    <div class="reviews-summary-rating" id="reviews-avg-rating">—</div>
-    <div class="reviews-summary-stars" id="reviews-avg-stars">☆☆☆☆☆</div>
-    <div class="reviews-summary-count" id="reviews-count">Пока нет отзывов</div>
-  </div>
-
   <!-- Лента отзывов -->
   <div class="reviews-feed" id="reviews-feed"></div>
 
@@ -4664,29 +4698,14 @@ async function loadReviews() {
 
     if (error) throw error;
 
-    const avgEl = document.getElementById('reviews-avg-rating');
-    const starsEl = document.getElementById('reviews-avg-stars');
-    const countEl = document.getElementById('reviews-count');
-
-    if (!reviews || reviews.length === 0) {
-      avgEl.innerText = '—';
-      starsEl.innerText = '☆☆☆☆☆';
-      countEl.innerText = 'Пока нет отзывов';
+        if (!reviews || reviews.length === 0) {
       feedEl.innerHTML = '';
       emptyEl.style.display = 'block';
       return;
     }
 
-    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-    const avg = (totalRating / reviews.length).toFixed(1);
-
-    avgEl.innerText = avg;
-    starsEl.innerText = renderStars(Math.round(avg));
-    countEl.innerText = `${reviews.length} ${declOfNum(reviews.length, ['отзыв', 'отзыва', 'отзывов'])}`;
-
     emptyEl.style.display = 'none';
     feedEl.innerHTML = '';
-
         // Собираем все shop_ids чтобы подтянуть названия
     const allShopIds = new Set();
     reviews.forEach(r => {
@@ -4942,9 +4961,9 @@ async function loadMyOrders() {
         const sizeStr = item.size ? `Размер: ${escapeHtml(item.size)}` : 'Размер не указан';
 
         const alreadyReviewed = reviewedProductIds.has(String(item.id));
-        const reviewBtnHtml = alreadyReviewed
-          ? `<div class="order-item-reviewed">✓ Отзыв оставлен</div>`
-          : `<button class="order-item-review-btn" onclick="openProductReviewComposer('${item.id}', '${escapeHtml(item.title || 'Товар')}')">Оставить отзыв</button>`;
+        const reviewRowHtml = alreadyReviewed
+          ? `<div class="order-review-row reviewed">✓ Отзыв оставлен</div>`
+          : `<div class="order-review-row" onclick="openProductReviewComposer('${item.id}', '${escapeHtml(item.title || 'Товар')}')">Оставить отзыв</div>`;
 
         itemsHtml += `
           <div class="order-item-row">
@@ -4952,7 +4971,7 @@ async function loadMyOrders() {
             <div class="order-item-info">
               <div class="order-item-title">${escapeHtml(item.title || 'Товар')}</div>
               <div class="order-item-meta">${sizeStr}</div>
-              ${reviewBtnHtml}
+              ${reviewRowHtml}
             </div>
           </div>
         `;
