@@ -2705,6 +2705,98 @@
   width: 20px;
   border-radius: 3px;
 }
+    /* ОТЗЫВЫ ТОВАРА В МОДАЛКЕ */
+.product-reviews-block {
+  margin-bottom: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.product-reviews-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.product-reviews-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.product-reviews-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #ffb800;
+  font-weight: 700;
+}
+.product-reviews-rating .count {
+  color: #8c8c8c;
+  font-weight: 500;
+}
+
+.product-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-review-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.product-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.product-review-author {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.product-review-date {
+  font-size: 10px;
+  color: #666;
+}
+
+.product-review-stars {
+  font-size: 13px;
+  color: #ffb800;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+
+.product-review-text {
+  font-size: 12px;
+  color: #cccccc;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.product-reviews-empty {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  padding: 16px 0;
+}
+.product-review-product-name {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 20px;
+  font-weight: 600;
+}    
   </style>
 </head>
 <body>
@@ -3035,6 +3127,17 @@
       <div class="modal-desc-label">Описание</div>
       <div id="m-desc" class="modal-desc"></div>
     </div>
+    <!-- ОТЗЫВЫ ТОВАРА -->
+<div class="product-reviews-block" id="m-reviews-block">
+  <div class="product-reviews-header">
+    <div class="product-reviews-title">Отзывы</div>
+    <div class="product-reviews-rating" id="m-reviews-rating"></div>
+  </div>
+  <div class="product-reviews-list" id="m-reviews-list"></div>
+  <div id="m-reviews-empty" class="product-reviews-empty" style="display: none;">
+    Пока нет отзывов об этом товаре
+  </div>
+</div>
     
         <div class="modal-actions">
       <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">Добавить в корзину</button>
@@ -3429,6 +3532,30 @@
   <div class="review-composer-actions">
     <button class="btn-cancel-review" onclick="closeReviewComposer()">Отмена</button>
     <button class="btn-send-review" onclick="submitReview()">Отправить</button>
+  </div>
+</div>
+  <!-- КОМПОЗЕР ОТЗЫВА ТОВАРА -->
+<div id="product-review-composer" class="review-composer">
+  <div class="review-composer-handle"></div>
+
+  <div class="review-composer-title">Отзыв о товаре</div>
+  <div id="product-review-product-name" class="product-review-product-name"></div>
+
+  <div class="review-form-label">Ваша оценка:</div>
+  <div class="review-rating-picker" id="product-review-rating-picker">
+    <div class="star" data-value="1" onclick="selectProductReviewRating(1)">☆</div>
+    <div class="star" data-value="2" onclick="selectProductReviewRating(2)">☆</div>
+    <div class="star" data-value="3" onclick="selectProductReviewRating(3)">☆</div>
+    <div class="star" data-value="4" onclick="selectProductReviewRating(4)">☆</div>
+    <div class="star" data-value="5" onclick="selectProductReviewRating(5)">☆</div>
+  </div>
+
+  <div class="review-form-label">Комментарий:</div>
+  <textarea id="product-review-text" class="review-textarea" placeholder="Поделитесь впечатлениями о товаре..." maxlength="500"></textarea>
+
+  <div class="review-composer-actions">
+    <button class="btn-cancel-review" onclick="closeProductReviewComposer()">Отмена</button>
+    <button class="btn-send-review" onclick="submitProductReview()">Отправить</button>
   </div>
 </div>
 <!-- FULLSCREEN ПРОСМОТРЩИК ФОТО -->
@@ -4325,6 +4452,10 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
 
   updateModalFavIcon(p.id);
+  updateModalFavIcon(p.id);
+
+  // Загружаем отзывы товара
+  loadProductReviews(p.id);
 
   document.getElementById('product-modal').style.display = 'block';
   tg.BackButton.show();
@@ -4780,6 +4911,16 @@ async function loadMyOrders() {
         prods.forEach(p => { productsMap[p.id] = p; });
       }
     }
+        // Загружаем отзывы клиента — чтобы знать, где он уже оставил отзыв
+    const { data: userReviews } = await client
+      .from('reviews')
+      .select('product_id')
+      .eq('user_tg_id', userId)
+      .not('product_id', 'is', null);
+
+    const reviewedProductIds = new Set(
+      (userReviews || []).map(r => String(r.product_id))
+    );
 
     orders.forEach(order => {
       const date = new Date(order.created_at);
@@ -4789,7 +4930,7 @@ async function loadMyOrders() {
 
       const items = Array.isArray(order.items) ? order.items : [];
 
-      let itemsHtml = '';
+            let itemsHtml = '';
       items.forEach(item => {
         let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=200';
         const prod = productsMap[item.id];
@@ -4802,17 +4943,22 @@ async function loadMyOrders() {
 
         const sizeStr = item.size ? `Размер: ${escapeHtml(item.size)}` : 'Размер не указан';
 
+        const alreadyReviewed = reviewedProductIds.has(String(item.id));
+        const reviewBtnHtml = alreadyReviewed
+          ? `<div class="order-item-reviewed">✓ Отзыв оставлен</div>`
+          : `<button class="order-item-review-btn" onclick="openProductReviewComposer('${item.id}', '${escapeHtml(item.title || 'Товар')}')">Оставить отзыв</button>`;
+
         itemsHtml += `
           <div class="order-item-row">
             <img class="order-item-img" src="${imgUrl}" alt="">
             <div class="order-item-info">
               <div class="order-item-title">${escapeHtml(item.title || 'Товар')}</div>
               <div class="order-item-meta">${sizeStr}</div>
+              ${reviewBtnHtml}
             </div>
           </div>
         `;
-      });
-
+      
       listEl.innerHTML += `
         <div class="order-card">
           <div class="order-card-header">
@@ -6714,6 +6860,157 @@ function getTouchDistance(touches) {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
   return Math.sqrt(dx * dx + dy * dy);
+}
+    // === ОТЗЫВЫ ТОВАРА ===
+async function loadProductReviews(productId) {
+  const listEl = document.getElementById('m-reviews-list');
+  const emptyEl = document.getElementById('m-reviews-empty');
+  const ratingEl = document.getElementById('m-reviews-rating');
+
+  listEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+  ratingEl.innerHTML = '';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: reviews, error } = await client
+      .from('reviews')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!reviews || reviews.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    // Средний рейтинг
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const avg = (totalRating / reviews.length).toFixed(1);
+
+    ratingEl.innerHTML = `
+      <span>${renderStars(Math.round(avg))}</span>
+      <span>${avg}</span>
+      <span class="count">· ${reviews.length}</span>
+    `;
+
+    // Список
+    reviews.forEach(r => {
+      const date = new Date(r.created_at);
+      const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      listEl.innerHTML += `
+        <div class="product-review-card">
+          <div class="product-review-head">
+            <div class="product-review-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
+            <div class="product-review-date">${dateStr}</div>
+          </div>
+          <div class="product-review-stars">${renderStars(r.rating)}</div>
+          <div class="product-review-text">${escapeHtml(r.text || '')}</div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки отзывов товара:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Не удалось загрузить отзывы';
+  }
+}
+    // === ОТЗЫВ О ТОВАРЕ ===
+let productReviewTargetId = null;
+let productReviewRating = 0;
+
+function openProductReviewComposer(productId, productTitle) {
+  productReviewTargetId = productId;
+  productReviewRating = 0;
+
+  document.getElementById('product-review-product-name').innerText = productTitle || '';
+  document.getElementById('product-review-text').value = '';
+
+  document.querySelectorAll('#product-review-rating-picker .star').forEach(s => {
+    s.classList.remove('active');
+    s.innerText = '☆';
+  });
+
+  document.getElementById('product-review-composer').classList.add('active');
+}
+
+function closeProductReviewComposer() {
+  document.getElementById('product-review-composer').classList.remove('active');
+  productReviewTargetId = null;
+  productReviewRating = 0;
+}
+
+function selectProductReviewRating(value) {
+  productReviewRating = value;
+  document.querySelectorAll('#product-review-rating-picker .star').forEach(star => {
+    const v = parseInt(star.getAttribute('data-value'));
+    if (v <= value) {
+      star.classList.add('active');
+      star.innerText = '★';
+    } else {
+      star.classList.remove('active');
+      star.innerText = '☆';
+    }
+  });
+}
+
+async function submitProductReview() {
+  if (!productReviewTargetId) return;
+
+  if (productReviewRating === 0) {
+    showAlert('Поставьте оценку');
+    return;
+  }
+
+  const text = document.getElementById('product-review-text').value.trim();
+  if (text.length < 3) {
+    showAlert('Напишите хотя бы пару слов');
+    return;
+  }
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const userName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Покупатель';
+  const userUsername = user.username || '';
+
+  // Узнаём shop_id товара, чтобы отзыв пошёл и в рейтинг магазина
+  let shopId = null;
+  const product = loadedProducts.find(p => String(p.id) === String(productReviewTargetId));
+  if (product && product.shop_id) {
+    shopId = product.shop_id;
+  }
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const insertData = {
+      user_tg_id: user.id || null,
+      user_name: userName,
+      user_username: userUsername,
+      rating: productReviewRating,
+      text: text,
+      is_approved: false,
+      product_id: Number(productReviewTargetId),
+      shop_ids: shopId ? [shopId] : []
+    };
+
+    const { error } = await client.from('reviews').insert(insertData);
+    if (error) throw error;
+
+    showAlert('Спасибо! Ваш отзыв появится после проверки модератором.');
+    closeProductReviewComposer();
+
+    // Обновляем список заказов — чтобы кнопка стала "✓ Отзыв оставлен"
+    loadMyOrders();
+
+  } catch (err) {
+    console.error('Ошибка отправки отзыва:', err);
+    showAlert('Не удалось отправить отзыв: ' + err.message);
+  }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
