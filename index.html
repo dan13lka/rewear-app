@@ -4452,8 +4452,6 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
 
   updateModalFavIcon(p.id);
-  updateModalFavIcon(p.id);
-
   // Загружаем отзывы товара
   loadProductReviews(p.id);
 
@@ -4958,6 +4956,7 @@ async function loadMyOrders() {
             </div>
           </div>
         `;
+       });
       
       listEl.innerHTML += `
         <div class="order-card">
