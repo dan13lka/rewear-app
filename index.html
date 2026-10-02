@@ -2499,6 +2499,110 @@
   justify-content: center;
   padding: 0 4px;
 }
+
+/* ЗАГРУЗКА ФОТО В ФОРМЕ ТОВАРА */
+.photo-upload-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.photo-upload-btn {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1.5px dashed #333;
+  color: #ffffff;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.15s;
+}
+.photo-upload-btn:active {
+  background: #222;
+  border-color: #555;
+  transform: scale(0.98);
+}
+
+.photo-upload-btn svg {
+  flex-shrink: 0;
+}
+
+.photo-upload-hint {
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+  font-weight: 500;
+}
+
+.photo-url-label {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* ПРЕВЬЮ ФОТО */
+.photos-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.photo-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+}
+
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-preview-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.75);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.photo-preview-remove:active {
+  background: rgba(255, 107, 107, 0.9);
+}
+
+.photo-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 12px;
+}
     
   </style>
 </head>
@@ -3040,11 +3144,30 @@
     <input type="text" id="pf-sizes" class="form-input" placeholder="S, M, L, XL">
   </div>
 
-  <div class="form-group">
-    <label class="form-label">URL фото (несколько через запятую)</label>
-    <textarea id="pf-images" class="form-textarea" placeholder="https://..., https://..."></textarea>
-  </div>
+    <div class="form-group">
+    <label class="form-label">Фото товара</label>
 
+    <!-- Загрузка с устройства -->
+    <div class="photo-upload-zone">
+      <input type="file" id="pf-file-input" accept="image/*" multiple style="display: none;" onchange="handlePhotoUpload(event)">
+      <button type="button" class="photo-upload-btn" onclick="document.getElementById('pf-file-input').click()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Загрузить с устройства
+      </button>
+      <div class="photo-upload-hint">Можно выбрать несколько фото сразу</div>
+    </div>
+
+    <!-- Или вставить URL вручную -->
+    <div class="photo-url-label">Или вставь URL фото (через запятую):</div>
+    <textarea id="pf-images" class="form-textarea" placeholder="https://..., https://..."></textarea>
+
+    <!-- Превью загруженных фото -->
+    <div id="pf-photos-preview" class="photos-preview"></div>
+  </div>
   <div class="form-group">
     <label class="form-label">Описание</label>
     <textarea id="pf-description" class="form-textarea" placeholder="Короткое описание товара"></textarea>
@@ -4830,6 +4953,7 @@ function showToast(message) {
 }
     // === АДМИНКА ===
 let editingProductId = null;
+let uploadedPhotos = []; // Массив URL загруженных фото
 
 function openAdminScreen() {
   document.getElementById('admin-screen').classList.add('active');
@@ -4924,6 +5048,8 @@ function getGenderIcon(gender) {
     
 async function openProductForm() {
   editingProductId = null;
+  uploadedPhotos = []; // Сбрасываем загруженные фото
+
   document.getElementById('product-form-title').innerText = 'Добавить товар';
   document.getElementById('pf-title').value = '';
   document.getElementById('pf-price').value = '';
@@ -4933,6 +5059,8 @@ async function openProductForm() {
   document.getElementById('pf-description').value = '';
   document.getElementById('pf-instock').value = 'true';
   document.getElementById('pf-gender').value = 'unisex';
+
+  renderPhotosPreview();
 
   // Загружаем магазины в dropdown
   await populateShopDropdown();
@@ -4981,16 +5109,15 @@ async function editProduct(id) {
       sizesStr = p.sizes.replace(/[\{\}\"\']/g, '').trim();
     }
     document.getElementById('pf-sizes').value = sizesStr;
-
-    // Фото
-    let imagesStr = '';
+       // Фото — загружаем в массив и показываем превью
+    uploadedPhotos = [];
     if (Array.isArray(p.image_urls)) {
-      imagesStr = p.image_urls.map(u => String(u).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean).join(', ');
-    } else if (typeof p.image_urls === 'string') {
-      imagesStr = p.image_urls.replace(/[\{\}\"\']/g, '').trim();
+      uploadedPhotos = p.image_urls.map(u => String(u).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+    } else if (typeof p.image_urls === 'string' && p.image_urls.trim()) {
+      uploadedPhotos = p.image_urls.replace(/[\{\}\"\']/g, '').split(',').map(s => s.trim()).filter(Boolean);
     }
-    document.getElementById('pf-images').value = imagesStr;
-
+    document.getElementById('pf-images').value = uploadedPhotos.join(', ');
+    renderPhotosPreview();
     document.getElementById('pf-description').value = p.description || '';
     document.getElementById('pf-instock').value = p.in_stock === false ? 'false' : 'true';
 
@@ -5030,10 +5157,13 @@ async function saveProduct() {
     ? sizesStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
     : [];
 
-  // Фото → массив
-  const imagesArr = imagesStr
+   // Фото → массив (объединяем загруженные + вручную введённые URL)
+  const urlsFromTextarea = imagesStr
     ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
     : [];
+
+  // Объединяем без дубликатов
+  const allImages = [...new Set([...uploadedPhotos, ...urlsFromTextarea])];
   
     const productData = {
     title,
@@ -5042,7 +5172,7 @@ async function saveProduct() {
     shop_id: shopId,
     gender: gender,
     sizes: sizesArr,
-    image_urls: imagesArr,
+    image_urls: allImages,
     description,
     in_stock: inStock
   };
@@ -6380,6 +6510,174 @@ function closeCustomConfirm(result) {
     confirmCallback = null;
   }
 }
+// === ЗАГРУЗКА ФОТО ===
+async function handlePhotoUpload(event) {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  // Сбрасываем input чтобы можно было выбрать те же файлы повторно
+  event.target.value = '';
+
+  const currentCount = uploadedPhotos.length;
+  const maxPhotos = 5;
+  const remaining = maxPhotos - currentCount;
+
+  if (remaining <= 0) {
+    showAlert('Максимум 5 фото на товар');
+    return;
+  }
+
+  const filesToProcess = Array.from(files).slice(0, remaining);
+
+  if (files.length > remaining) {
+    showAlert(`Можно добавить только ${remaining} фото (макс ${maxPhotos})`);
+  }
+
+  // Показываем индикатор загрузки
+  const previewEl = document.getElementById('pf-photos-preview');
+  for (let i = 0; i < filesToProcess.length; i++) {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'photo-preview-item photo-preview-loading';
+    loadingDiv.id = 'photo-loading-' + i;
+    loadingDiv.innerText = '...';
+    previewEl.appendChild(loadingDiv);
+  }
+
+  // Загружаем каждое фото
+  for (let i = 0; i < filesToProcess.length; i++) {
+    try {
+      const file = filesToProcess[i];
+      const url = await uploadPhotoToSupabase(file);
+      uploadedPhotos.push(url);
+
+      // Убираем лоадер
+      const loader = document.getElementById('photo-loading-' + i);
+      if (loader) loader.remove();
+
+    } catch (err) {
+      console.error('Ошибка загрузки фото:', err);
+      const loader = document.getElementById('photo-loading-' + i);
+      if (loader) loader.remove();
+      showAlert('Не удалось загрузить фото');
+    }
+  }
+
+  renderPhotosPreview();
+}
+
+async function uploadPhotoToSupabase(file) {
+  // 1. Сжимаем фото
+  const compressedBlob = await compressImage(file, 1080, 0.85);
+
+  // 2. Генерируем уникальное имя
+  const ext = 'jpg';
+  const fileName = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+  const filePath = `products/${fileName}`;
+
+  // 3. Создаём клиент с админским ключом
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    global: {
+      headers: {
+        'x-admin-key': ADMIN_SECRET
+      }
+    }
+  });
+
+  // 4. Загружаем
+  const { data, error } = await client.storage
+    .from('product-images')
+    .upload(filePath, compressedBlob, {
+      contentType: 'image/jpeg',
+      upsert: false
+    });
+
+  if (error) throw error;
+
+  // 5. Получаем публичный URL
+  const { data: urlData } = client.storage
+    .from('product-images')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+}
+
+// Сжатие фото через Canvas
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Считаем новые размеры
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        // Создаём canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // В blob
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Не удалось сжать фото'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Не удалось прочитать фото'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Отрисовка превью
+function renderPhotosPreview() {
+  const previewEl = document.getElementById('pf-photos-preview');
+  if (!previewEl) return;
+
+  previewEl.innerHTML = '';
+
+  uploadedPhotos.forEach((url, idx) => {
+    previewEl.innerHTML += `
+      <div class="photo-preview-item">
+        <img src="${url}" alt="">
+        <button type="button" class="photo-preview-remove" onclick="removePhoto(${idx})">×</button>
+      </div>
+    `;
+  });
+}
+
+function removePhoto(idx) {
+  uploadedPhotos.splice(idx, 1);
+  renderPhotosPreview();
+  updateImagesTextareaFromPhotos();
+}
+
+// Синхронизируем textarea с URL-ами
+function updateImagesTextareaFromPhotos() {
+  // Оставляем только ручные URL + загруженные
+  // Проще: всё что в uploadedPhotos → в textarea
+  const ta = document.getElementById('pf-images');
+  if (!ta) return;
+  ta.value = uploadedPhotos.join(', ');
+}
+    
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
