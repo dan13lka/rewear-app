@@ -5841,6 +5841,48 @@ function updateCategoryChips() {
 
   catBar.innerHTML = html;
 }
+
+   // Изменение количества товара в корзине
+function changeCartQty(id, size, delta) {
+  const strId = String(id);
+  const strSize = String(size || '');
+
+  const item = cart.find(it => it.id === strId && it.size === strSize);
+  if (!item) return;
+
+  const newQty = (item.qty || 1) + delta;
+
+  if (newQty < 1) {
+    removeFromCart(strId, strSize);
+    return;
+  }
+
+  if (newQty > 10) {
+    tg.showAlert('Максимум 10 штук');
+    return;
+  }
+
+  item.qty = newQty;
+
+  // Пересчитываем итог для проверки промокода
+  let cartTotal = 0;
+  cart.forEach(it => {
+    const p = loadedProducts.find(prod => String(prod.id) === it.id);
+    if (p) cartTotal += Number(p.price || 0) * (it.qty || 1);
+  });
+
+  if (appliedPromo && (cartTotal === 0 || appliedPromo.discount_amount >= cartTotal)) {
+    appliedPromo = null;
+    const promoInputW = document.getElementById('promo-input-wrapper');
+    if (promoInputW) promoInputW.style.display = 'flex';
+    const promoSuccess = document.getElementById('promo-success');
+    if (promoSuccess) promoSuccess.style.display = 'none';
+  }
+
+  saveState();
+  renderCart();
+} 
+    
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
