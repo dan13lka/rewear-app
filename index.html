@@ -6170,8 +6170,16 @@ async function loadUserShopsForReview() {
     if (shopsError) throw shopsError;
     if (!shops || shops.length === 0) return;
 
+       // Убираем дубликаты по имени
+    const seenNames = new Set();
+    const uniqueShops = shops.filter(s => {
+      if (seenNames.has(s.name)) return false;
+      seenNames.add(s.name);
+      return true;
+    });
+
     // Рендерим чек-боксы
-    shops.forEach(s => {
+    uniqueShops.forEach(s => {
       listEl.innerHTML += `
         <div class="review-shop-item" data-shop-id="${s.id}" onclick="toggleReviewShop(this)">
           <div class="review-shop-checkbox">
