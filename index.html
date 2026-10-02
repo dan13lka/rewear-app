@@ -2479,6 +2479,27 @@
 .loader-re-dot:last-child {
   transform: translateY(35px);
 }
+.btn-go-cart-small {
+  position: relative;
+}
+
+.m-cart-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #ff4d4d;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+    
   </style>
 </head>
 <body>
@@ -2812,12 +2833,13 @@
     
         <div class="modal-actions">
       <button id="m-cart-btn" class="btn-cart-add" onclick="toggleCartFromModal()">Добавить в корзину</button>
-      <button id="m-go-cart-btn" class="btn-go-cart-small" onclick="goToCartFromModal()" style="display: none;">
+            <button id="m-go-cart-btn" class="btn-go-cart-small" onclick="goToCartFromModal()" style="display: none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1"></circle>
           <circle cx="20" cy="21" r="1"></circle>
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
         </svg>
+        <div id="m-go-cart-count" class="m-cart-badge">0</div>
       </button>
     </div>
   </div>
@@ -3712,9 +3734,15 @@ function toggleFav(e, id) {
     totalQty += (item.qty || 1);
   });
 
+  // Бейдж в нижнем меню
   const cartEl = document.getElementById('cart-count');
   if (cartEl) cartEl.innerText = totalQty;
 
+  // Бейдж в модалке (на кнопке "перейти в корзину")
+  const mGoCartCount = document.getElementById('m-go-cart-count');
+  if (mGoCartCount) mGoCartCount.innerText = totalQty;
+
+  // Бейдж избранного
   const favEl = document.getElementById('fav-count');
   if (favEl) {
     favEl.innerText = favorites.length;
@@ -4038,7 +4066,8 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
     renderSizeOptions(p.sizes || []);
     cartBtn.classList.remove('disabled');
 
-    const inCart = cart.some(item => String(item.id) === String(p.id));
+    const currentSize = selectedSize || '';
+    const inCart = cart.some(item => String(item.id) === String(p.id) && item.size === currentSize);
     if (inCart) {
       cartBtn.classList.add('in-cart');
       cartBtn.innerText = '✓ Товар в корзине';
@@ -4177,6 +4206,27 @@ function selectSize(size, chipEl) {
     chip.classList.remove('selected');
   });
   if (chipEl) chipEl.classList.add('selected');
+
+  // Обновляем кнопку — есть ли товар в этом размере в корзине
+  if (activeModalIndex === null) return;
+  const p = loadedProducts[activeModalIndex];
+  if (!p) return;
+
+  const inCart = cart.some(item => String(item.id) === String(p.id) && item.size === size);
+  const cartBtn = document.getElementById('m-cart-btn');
+  const goCartBtn = document.getElementById('m-go-cart-btn');
+
+  if (cartBtn) {
+    if (inCart) {
+      cartBtn.classList.add('in-cart');
+      cartBtn.innerText = '✓ Товар в корзине';
+      if (goCartBtn) goCartBtn.style.display = 'flex';
+    } else {
+      cartBtn.classList.remove('in-cart');
+      cartBtn.innerText = 'Добавить в корзину';
+      if (goCartBtn) goCartBtn.style.display = 'none';
+    }
+  }
 }
   // === ОТЗЫВЫ ===
 let selectedReviewRating = 0;
