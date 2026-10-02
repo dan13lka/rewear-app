@@ -2315,6 +2315,96 @@
   letter-spacing: 0.5px;
   user-select: none;
 }
+
+/* КАСТОМНЫЕ МОДАЛКИ УВЕДОМЛЕНИЙ */
+.custom-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.custom-modal.show {
+  display: flex;
+}
+
+.custom-modal-box {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 18px;
+  padding: 22px 20px 18px;
+  width: 100%;
+  max-width: 340px;
+  animation: customModalIn 0.2s ease-out;
+}
+
+@keyframes customModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.custom-modal-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.custom-modal-text {
+  font-size: 15px;
+  color: #ffffff;
+  line-height: 1.4;
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.custom-modal-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.custom-modal-btn:active {
+  opacity: 0.85;
+}
+
+.custom-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.custom-modal-actions .custom-modal-btn {
+  flex: 1;
+}
+.custom-modal-actions .custom-modal-btn.cancel {
+  background: #1a1a1a;
+  color: #8c8c8c;
+  border: 1px solid #2a2a2a;
+}
+.custom-modal-actions .custom-modal-btn.confirm {
+  background: #ffffff;
+  color: #0d0d0d;
+}
     
   </style>
 </head>
@@ -2445,6 +2535,25 @@
     </div>
     <div class="toast-text" id="toast-text">Промокод скопирован</div>
   </div>
+  <!-- КАСТОМНЫЙ АЛЕРТ -->
+<div id="custom-alert" class="custom-modal">
+  <div class="custom-modal-box">
+    <div class="custom-modal-title">RE:WEAR</div>
+    <div class="custom-modal-text" id="custom-alert-text"></div>
+    <button class="custom-modal-btn" onclick="closeCustomAlert()">ОК</button>
+  </div>
+</div>
+<!-- КАСТОМНОЕ ПОДТВЕРЖДЕНИЕ -->
+<div id="custom-confirm" class="custom-modal">
+  <div class="custom-modal-box">
+    <div class="custom-modal-title">RE:WEAR</div>
+    <div class="custom-modal-text" id="custom-confirm-text"></div>
+    <div class="custom-modal-actions">
+      <button class="custom-modal-btn cancel" onclick="closeCustomConfirm(false)">Отмена</button>
+      <button class="custom-modal-btn confirm" onclick="closeCustomConfirm(true)">Да</button>
+    </div>
+  </div>
+</div>
 
   <!-- 2. ИЗБРАННОЕ -->
   <div id="tab-favorites" class="tab-content">
@@ -3026,7 +3135,6 @@
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
     const ADMIN_USERNAME = 'KYJITYPA'; 
@@ -6116,7 +6224,31 @@ function changeCartQty(id, size, delta) {
   saveState();
   renderCart();
 } 
-    
+
+// === КАСТОМНЫЕ УВЕДОМЛЕНИЯ ===
+function showAlert(message) {
+  document.getElementById('custom-alert-text').innerText = message;
+  document.getElementById('custom-alert').classList.add('show');
+}
+
+function closeCustomAlert() {
+  document.getElementById('custom-alert').classList.remove('show');
+}
+
+let confirmCallback = null;
+function showConfirm(message, callback) {
+  document.getElementById('custom-confirm-text').innerText = message;
+  document.getElementById('custom-confirm').classList.add('show');
+  confirmCallback = callback;
+}
+
+function closeCustomConfirm(result) {
+  document.getElementById('custom-confirm').classList.remove('show');
+  if (confirmCallback) {
+    confirmCallback(result);
+    confirmCallback = null;
+  }
+}
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
