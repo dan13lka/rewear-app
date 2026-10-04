@@ -1696,6 +1696,65 @@
   color: #0d0d0d;
   border-color: #ffffff;
 }
+   /* СТАТИСТИКА */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stats-card {
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  padding: 14px;
+}
+.stats-card-label {
+  font-size: 11px;
+  color: #8c8c8c;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.stats-card-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.stats-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stats-top-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 10px 12px;
+  gap: 10px;
+}
+.stats-top-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.stats-top-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6db8ff;
+  background: rgba(109, 184, 255, 0.1);
+  padding: 3px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
 
 .admin-tab-content {
   display: none;
@@ -3613,6 +3672,7 @@
     <button class="admin-tab" onclick="switchAdminTab('shops', this)">Магазины</button>
     <button class="admin-tab" onclick="switchAdminTab('reviews', this)">Отзывы</button>
     <button class="admin-tab" onclick="switchAdminTab('promo', this)">Промокоды</button>
+    <button class="admin-tab" onclick="switchAdminTab('stats', this)">Статистика</button>
   </div>
 
   <!-- Раздел: ТОВАРЫ -->
@@ -3657,7 +3717,22 @@
     </div>
   </div>
 </div>
+  <!-- Раздел: СТАТИСТИКА -->
+  <div id="admin-tab-stats" class="admin-tab-content">
+    <div class="form-group">
+      <label class="form-label">Период</label>
+      <select id="stats-days" class="form-select" onchange="loadAdminStats()">
+        <option value="1">За 24 часа</option>
+        <option value="7" selected>За 7 дней</option>
+        <option value="30">За 30 дней</option>
+        <option value="90">За 90 дней</option>
+      </select>
+    </div>
 
+    <div id="stats-content">
+      <div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>
+    </div>
+  </div>
 <!-- МОДАЛКА ФОРМЫ ТОВАРА -->
 <div id="product-form-modal" class="modal">
   <button class="modal-close" onclick="closeProductForm()">
@@ -4323,6 +4398,7 @@ function toggleFav(e, id) {
       }
 
       saveState();
+      trackEvent(favorites.includes(strId) ? 'fav_add' : 'fav_remove', strId);
 
       const svgIcon = document.getElementById('fav-icon-' + strId);
       if (svgIcon) {
@@ -4430,8 +4506,9 @@ function toggleFav(e, id) {
     });
   }
 
-    saveState();
+  saveState();
   renderCart();
+  trackEvent('cart_add', strId);
 
   // Обновляем кнопки в модалке
   const cartBtn = document.getElementById('m-cart-btn');
@@ -4801,6 +4878,7 @@ function toggleFav(e, id) {
   activeModalIndex = index;
   const p = loadedProducts[index];
   if (!p) return;
+  trackEvent('view', p.id);
 
   // Собираем массив фото
   let images = [];
@@ -5790,6 +5868,7 @@ function switchAdminTab(tabName, element) {
   if (tabName === 'shops') loadAdminShops();
   if (tabName === 'reviews') loadAdminReviews();
   if (tabName === 'promo') loadAdminPromo();
+  if (tabName === 'stats') loadAdminStats();
 }
 
 // === ТОВАРЫ В АДМИНКЕ ===
@@ -6027,6 +6106,31 @@ async function adminCall(action, payload = {}) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка сервера');
   return json.data;
+}
+   async function trackEvent(type, productId) {
+  try {
+    // Для просмотров троттлинг на клиенте — не чаще 1 раза в 30 минут
+    if (type === 'view' && productId) {
+      const key = `viewed_${productId}`;
+      const last = Number(localStorage.getItem(key) || 0);
+      const now = Date.now();
+      if (now - last < 30 * 60 * 1000) return;
+      localStorage.setItem(key, String(now));
+    }
+
+    await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'track_event',
+        payload: { type, product_id: productId }
+      })
+    });
+  } catch (err) {
+    // не мешаем UX, если аналитика не сработала
+    console.warn('trackEvent failed:', err);
+  }
 }
 // Перезагружает каталог после изменений в админке
 async function refreshCatalog() {
@@ -6359,7 +6463,70 @@ async function loadAdminPromo() {
     emptyEl.innerText = 'Ошибка загрузки: ' + err.message;
   }
 }
+async function loadAdminStats() {
+  const contentEl = document.getElementById('stats-content');
+  if (!contentEl) return;
+  const days = Number(document.getElementById('stats-days').value) || 7;
 
+  contentEl.innerHTML = `<div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>`;
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'stats_get',
+        payload: { days }
+      })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка');
+
+    const s = json.data;
+
+    const topHtml = s.top_viewed.length === 0
+      ? `<div style="text-align:center;color:#666;font-size:12px;padding:16px 0;">Пока нет данных</div>`
+      : `<div class="stats-top-list">${s.top_viewed.map(p => `
+          <div class="stats-top-item">
+            <div class="stats-top-title">${escapeHtml(p.title)}</div>
+            <div class="stats-top-count">${p.count}</div>
+          </div>`).join('')}
+        </div>`;
+
+    contentEl.innerHTML = `
+      <div class="stats-grid">
+        <div class="stats-card">
+          <div class="stats-card-label">Просмотры</div>
+          <div class="stats-card-value">${s.views}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Уник. посетителей</div>
+          <div class="stats-card-value">${s.unique_users}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Добавления в избранное</div>
+          <div class="stats-card-value">${s.fav_adds}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Добавления в корзину</div>
+          <div class="stats-card-value">${s.cart_adds}</div>
+        </div>
+        <div class="stats-card" style="grid-column: 1 / -1;">
+          <div class="stats-card-label">В избранном сейчас у всех</div>
+          <div class="stats-card-value">${s.total_favorites_now}</div>
+        </div>
+      </div>
+
+      <div class="form-label" style="margin-top:8px;">Топ просматриваемых товаров</div>
+      ${topHtml}
+    `;
+
+  } catch (err) {
+    console.error('Ошибка статистики:', err);
+    contentEl.innerHTML = `<div style="text-align:center;color:#ff6b6b;padding:30px 0;font-size:13px;">Не удалось загрузить статистику</div>`;
+  }
+}
 function openPromoForm() {
   document.getElementById('promo-form-title').innerText = 'Создать промокод';
   document.getElementById('promo-f-code').value = '';
