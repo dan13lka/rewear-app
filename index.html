@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -325,6 +325,44 @@
   line-height: 1.6;
   white-space: pre-line;
   margin: 0;
+}
+    .card-rating {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 3;
+}
+.card-rating svg {
+  width: 11px;
+  height: 11px;
+  fill: #ffb800;
+  stroke: none;
+}
+.modal-related-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.modal-related-rating svg {
+  width: 11px;
+  height: 11px;
+  fill: #ffb800;
+  stroke: none;
 }
     /* РЕКОМЕНДУЕМ ТАКЖЕ */
 .modal-related-block {
@@ -3818,13 +3856,6 @@
     <button class="btn-form-save" onclick="savePromo()">Сохранить</button>
   </div>
 </div>
-<!-- ПАНЕЛЬ ВВОДА ОТЗЫВА (снизу) -->
-<div id="review-input-bar" class="review-input-bar">
-  <button class="review-input-btn" onclick="openReviewComposer()">
-    Оставьте свой отзыв...
-  </button>
-</div>
-
 <!-- КОМПОЗЕР ОТЗЫВА (модалка для ввода) -->
 <div id="review-composer" class="review-composer">
   <div class="review-composer-handle"></div>
@@ -3885,6 +3916,20 @@
   <div class="review-form-label">Комментарий:</div>
   <textarea id="product-review-text" class="review-textarea" placeholder="Поделитесь впечатлениями о товаре..." maxlength="500"></textarea>
 
+  <div class="review-photo-section">
+    <div class="review-form-label">Фото (до 3 штук)</div>
+    <input type="file" id="product-review-file-input" accept="image/*" multiple style="display: none;" onchange="handleProductReviewPhotoUpload(event)">
+    <button type="button" class="review-photo-upload-btn" onclick="document.getElementById('product-review-file-input').click()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      Добавить фото
+    </button>
+    <div id="product-review-photos-preview" class="review-photos-preview"></div>
+  </div>
+
   <div class="review-composer-actions">
     <button class="btn-cancel-review" onclick="closeProductReviewComposer()">Отмена</button>
     <button class="btn-send-review" onclick="submitProductReview()">Отправить</button>
@@ -3938,6 +3983,7 @@
     const ADMIN_TG_ID = 6244774379;
     
     let loadedProducts = [];
+    let productRatings = {}; // { [product_id]: { avg: 4.4, count: 12 } }
     let selectedCategory = 'все';
     let selectedGender = 'all';
     
@@ -4009,6 +4055,7 @@
         loadedProducts = products;
         // Обогащаем товары названием магазина (для отображения)
         await enrichProductsWithShopNames();
+        await loadProductRatings();1
         populateShopFilter(loadedProducts);
         updateCategoryChips();
         renderProducts(loadedProducts);
@@ -4065,7 +4112,39 @@ async function enrichProductsWithShopNames() {
     console.error('Ошибка обогащения товаров:', err);
   }
 }
+async function loadProductRatings() {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: reviews, error } = await client
+      .from('reviews')
+      .select('product_id, rating')
+      .eq('is_approved', true)
+      .not('product_id', 'is', null);
 
+    if (error) throw error;
+
+    productRatings = {};
+    if (!reviews) return;
+
+    const agg = {};
+    reviews.forEach(r => {
+      const pid = r.product_id;
+      if (!agg[pid]) agg[pid] = { sum: 0, count: 0 };
+      agg[pid].sum += Number(r.rating || 0);
+      agg[pid].count += 1;
+    });
+
+    Object.keys(agg).forEach(pid => {
+      const { sum, count } = agg[pid];
+      productRatings[pid] = {
+        avg: (sum / count).toFixed(1),
+        count: count
+      };
+    });
+  } catch (err) {
+    console.error('Ошибка загрузки оценок:', err);
+  }
+}
     function toggleFilterPanel() {
       const panel = document.getElementById('filter-panel');
       const btn = document.getElementById('filter-btn');
@@ -4149,62 +4228,65 @@ async function enrichProductsWithShopNames() {
       applyFilters();
     }
 
-    function renderProducts(products) {
-      const loadingEl = document.getElementById('loading');
-      const gridEl = document.getElementById('catalog-grid');
+  function renderProducts(products) {
+  const loadingEl = document.getElementById('loading');
+  const gridEl = document.getElementById('catalog-grid');
 
-      gridEl.innerHTML = '';
+  gridEl.innerHTML = '';
 
-      if (products.length === 0) {
-        loadingEl.style.display = 'block';
-        loadingEl.innerText = "Товары по вашему запросу не найдены.";
-        gridEl.style.display = 'none';
-        return;
-      }
+  if (products.length === 0) {
+    loadingEl.style.display = 'block';
+    loadingEl.innerText = "Товары по вашему запросу не найдены.";
+    gridEl.style.display = 'none';
+    return;
+  }
 
-      loadingEl.style.display = 'none';
-      gridEl.style.display = 'grid';
+  loadingEl.style.display = 'none';
+  gridEl.style.display = 'grid';
 
-      products.forEach((product) => {
-        const originalIndex = loadedProducts.indexOf(product);
-        let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
-        if (product.image_urls) {
-          imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
-          imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
-        }
-
-        const isFav = favorites.includes(String(product.id));
-        const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
-        const shopName = product.shop || 'RE:WEAR Select';
-
-                const inStock = product.in_stock !== false;
-        const soldOverlay = inStock ? '' : '<div class="sold-overlay"><span>ПРОДАНО</span></div>';
-        const cardClass = inStock ? 'card' : 'card card-sold';
-
-        const cardHtml = `
-          <div class="${cardClass}" onclick="openProduct(${originalIndex})">
-            <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-              <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#8c8c8c'}" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-            </button>
-            <div class="card-img-wrapper">
-              <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
-              ${soldOverlay}
-            </div>
-            <div class="card-info">
-              <div class="card-shop">${shopName}</div>
-              <div class="card-title">${product.title || 'Без названия'}</div>
-              <div class="card-price">${priceVal} сум</div>
-              <div class="card-meta">${genderBadgeHtml(product.gender)}
-  <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
-</div>
-            </div>
-          </div>
-        `;
-        gridEl.innerHTML += cardHtml;;
-      });
+  products.forEach((product) => {
+    const originalIndex = loadedProducts.indexOf(product);
+    let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
+    if (product.image_urls) {
+      imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
+      imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
     }
+
+    const isFav = favorites.includes(String(product.id));
+    const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+    const shopName = product.shop || 'RE:WEAR Select';
+
+    const inStock = product.in_stock !== false;
+    const soldOverlay = inStock ? '' : '<div class="sold-overlay"><span>ПРОДАНО</span></div>';
+    const cardClass = inStock ? 'card' : 'card card-sold';
+
+    const ratingHtml = ratingBadgeHtml(product.id);
+
+    const cardHtml = `
+      <div class="${cardClass}" onclick="openProduct(${originalIndex})">
+        <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
+          <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#8c8c8c'}" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </button>
+        <div class="card-img-wrapper">
+          <img class="card-img" src="${imageUrl}" alt="${product.title || ''}">
+          ${soldOverlay}
+          ${ratingHtml}
+        </div>
+        <div class="card-info">
+          <div class="card-shop">${shopName}</div>
+          <div class="card-title">${product.title || 'Без названия'}</div>
+          <div class="card-price">${priceVal} сум</div>
+          <div class="card-meta">${genderBadgeHtml(product.gender)}
+            <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    gridEl.innerHTML += cardHtml;
+  });
+}
 
     function switchTab(tabName, element) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -4941,7 +5023,6 @@ let reviewPhotos = []; // массив URL загруженных фото
 
 function openReviewsScreen() {
   document.getElementById('reviews-screen').classList.add('active');
-  document.getElementById('review-input-bar').classList.add('active');
   tg.BackButton.show();
   tg.BackButton.onClick(closeReviewsScreen);
   loadReviews();
@@ -4949,7 +5030,6 @@ function openReviewsScreen() {
 
 function closeReviewsScreen() {
   document.getElementById('reviews-screen').classList.remove('active');
-  document.getElementById('review-input-bar').classList.remove('active');
   tg.BackButton.hide();
 }
 
@@ -5000,6 +5080,63 @@ function selectRating(value) {
       </div>
     `;
   });
+}
+    function renderProductReviewPhotosPreview() {
+  const el = document.getElementById('product-review-photos-preview');
+  if (!el) return;
+  el.innerHTML = '';
+  productReviewPhotos.forEach((url, idx) => {
+    el.innerHTML += `
+      <div class="review-photo-item">
+        <img src="${url}" alt="">
+        <button type="button" class="review-photo-remove" onclick="removeProductReviewPhoto(${idx})">×</button>
+      </div>
+    `;
+  });
+}
+
+function removeProductReviewPhoto(idx) {
+  productReviewPhotos.splice(idx, 1);
+  renderProductReviewPhotosPreview();
+}
+
+async function handleProductReviewPhotoUpload(event) {
+  const input = event.target;
+  const files = Array.from(input.files || []);
+  input.value = '';
+
+  if (files.length === 0) return;
+
+  const maxPhotos = 3;
+  const remaining = maxPhotos - productReviewPhotos.length;
+  if (remaining <= 0) {
+    showAlert('Максимум 3 фото на отзыв');
+    return;
+  }
+
+  const filesToProcess = files.slice(0, remaining);
+  const previewEl = document.getElementById('product-review-photos-preview');
+
+  for (let i = 0; i < filesToProcess.length; i++) {
+    renderProductReviewPhotosPreview();
+    for (let k = i; k < filesToProcess.length; k++) {
+      const loading = document.createElement('div');
+      loading.className = 'review-photo-item review-photo-loading';
+      loading.innerText = '...';
+      previewEl.appendChild(loading);
+    }
+
+    try {
+      const blob = await compressImage(filesToProcess[i], 1080, 0.85);
+      const url = await uploadViaServer('product-images', blob, 'jpg', 'image/jpeg');
+      productReviewPhotos.push(url);
+    } catch (err) {
+      console.error('Ошибка загрузки фото отзыва:', err);
+      showAlert('Не удалось загрузить фото: ' + (err.message || ''));
+    }
+  }
+
+  renderProductReviewPhotosPreview();
 }
 
 function removeReviewPhoto(idx) {
@@ -5069,42 +5206,83 @@ async function loadReviews() {
     emptyEl.style.display = 'none';
     feedEl.innerHTML = '';
 
-    // Собираем все shop_ids чтобы подтянуть названия
+    // Собираем shop_ids и product_ids
     const allShopIds = new Set();
+    const allProductIds = new Set();
     reviews.forEach(r => {
-      if (Array.isArray(r.shop_ids)) {
-        r.shop_ids.forEach(id => allShopIds.add(id));
-      }
+      if (Array.isArray(r.shop_ids)) r.shop_ids.forEach(id => allShopIds.add(id));
+      if (r.product_id) allProductIds.add(r.product_id);
     });
 
     let shopsMap = {};
     if (allShopIds.size > 0) {
       const { data: shopsData } = await client
-        .from('shops')
-        .select('id, name')
-        .in('id', Array.from(allShopIds));
+        .from('shops').select('id, name').in('id', Array.from(allShopIds));
+      if (shopsData) shopsData.forEach(s => { shopsMap[s.id] = s.name; });
+    }
 
-      if (shopsData) {
-        shopsData.forEach(s => { shopsMap[s.id] = s.name; });
-      }
+    let productsMap = {};
+    if (allProductIds.size > 0) {
+      const { data: prodsData } = await client
+        .from('products').select('id, title').in('id', Array.from(allProductIds));
+      if (prodsData) prodsData.forEach(p => { productsMap[p.id] = p.title; });
     }
 
     reviews.forEach(r => {
       const date = new Date(r.created_at);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      // Пометки о магазинах
+      // Теги магазинов
       let shopsTagsHtml = '';
       if (Array.isArray(r.shop_ids) && r.shop_ids.length > 0) {
         const tags = r.shop_ids
           .filter(id => shopsMap[id])
           .map(id => `<span class="review-shop-tag" onclick="event.stopPropagation(); openShopScreen(${id})">🏪 ${escapeHtml(shopsMap[id])}</span>`)
           .join('');
-        if (tags) {
-          shopsTagsHtml = `<div class="review-shops-tags">${tags}</div>`;
-        }
+        if (tags) shopsTagsHtml = tags;
       }
 
+      // Тег товара
+      let productTagHtml = '';
+      if (r.product_id && productsMap[r.product_id]) {
+        productTagHtml = `<span class="review-shop-tag" style="color:#ffb800;background:rgba(255,184,0,0.1);" onclick="event.stopPropagation(); openProductById(${r.product_id})">👕 ${escapeHtml(productsMap[r.product_id])}</span>`;
+      }
+
+      const allTags = (shopsTagsHtml || productTagHtml)
+        ? `<div class="review-shops-tags">${shopsTagsHtml}${productTagHtml}</div>`
+        : '';
+
+      // Фото
+      let photosHtml = '';
+      if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
+        const safeArr = r.photo_urls.map(u => `'${escapeHtml(u)}'`).join(',');
+        photosHtml = '<div class="review-card-photos">' +
+          r.photo_urls.map((url, i) =>
+            `<img class="review-card-photo" src="${escapeHtml(url)}" onclick="openPhotoViewer([${safeArr}], ${i})">`
+          ).join('') +
+        '</div>';
+      }
+
+      feedEl.innerHTML += `
+        <div class="review-card">
+          <div class="review-card-header">
+            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
+            <div class="review-card-date">${dateStr}</div>
+          </div>
+          <div class="review-card-stars">${renderStars(r.rating)}</div>
+          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
+          ${photosHtml}
+          ${allTags}
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки отзывов:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Не удалось загрузить отзывы.';
+  }
+}
       // ФОТО ОТЗЫВА
       let photosHtml = '';
       if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
@@ -5889,6 +6067,7 @@ async function refreshCatalog() {
   if (allProducts) {
     loadedProducts = allProducts;
     await enrichProductsWithShopNames();
+    await loadProductRatings();
     populateShopFilter(loadedProducts);
     updateCategoryChips();
     applyFilters();
@@ -6068,6 +6247,17 @@ async function loadAdminReviews() {
 
       const isApproved = r.is_approved === true;
 
+      // ФОТО
+      let photosHtml = '';
+      if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
+        const safeArr = r.photo_urls.map(u => `'${escapeHtml(u)}'`).join(',');
+        photosHtml = '<div class="review-card-photos" style="margin-top:10px;">' +
+          r.photo_urls.map((url, i) =>
+            `<img class="review-card-photo" src="${escapeHtml(url)}" onclick="openPhotoViewer([${safeArr}], ${i})">`
+          ).join('') +
+        '</div>';
+      }
+
       // Кнопки действий
       let actionsHtml = '';
       if (isApproved) {
@@ -6097,6 +6287,7 @@ async function loadAdminReviews() {
           </div>
           <div class="admin-review-stars">${renderStars(r.rating)}</div>
           <div class="admin-review-text">${escapeHtml(r.text || '')}</div>
+          ${photosHtml}
           ${actionsHtml}
         </div>
       `;
@@ -6108,13 +6299,14 @@ async function loadAdminReviews() {
     emptyEl.innerText = 'Ошибка загрузки: ' + err.message;
   }
 }
-
 async function approveReview(id) {
   try {
     await adminCall('review_approve', { id });
 
     tg.showAlert('Отзыв одобрен и опубликован');
     loadAdminReviews();
+
+    await loadProductRatings();
 
   } catch (err) {
     console.error('Ошибка одобрения отзыва:', err);
@@ -6132,6 +6324,8 @@ async function deleteReview(id) {
       tg.showAlert('Отзыв удалён');
       loadAdminReviews();
 
+      await loadProductRatings();
+      
     } catch (err) {
       console.error('Ошибка удаления отзыва:', err);
       tg.showAlert('Не удалось удалить: ' + err.message);
@@ -6698,6 +6892,25 @@ function openProductFromShop(productId) {
   }
   openProduct(index);
 }
+  async function openProductById(productId) {
+  const index = loadedProducts.findIndex(p => String(p.id) === String(productId));
+  if (index !== -1) {
+    openProduct(index);
+    return;
+  }
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: product, error } = await client
+      .from('products').select('*').eq('id', productId).single();
+    if (error) throw error;
+    if (!product) return;
+    loadedProducts.push(product);
+    openProduct(loadedProducts.length - 1);
+  } catch (err) {
+    console.error('Ошибка открытия товара:', err);
+    tg.showAlert('Не удалось открыть товар');
+  }
+}  
 
 async function openProductByIdFromShop(productId) {
   try {
@@ -6883,6 +7096,14 @@ function genderBadgeHtml(gender) {
   }
   // unisex или пусто
   return `<span class="gender-badge unisex" title="Унисекс">${GENDER_ICON_MALE}${GENDER_ICON_FEMALE}</span>`;
+}
+
+  const STAR_ICON = '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+
+  function ratingBadgeHtml(productId) {
+  const r = productRatings[String(productId)] || productRatings[productId];
+  if (!r || !r.count) return '';
+  return `<div class="card-rating">${STAR_ICON}<span>${r.avg}</span></div>`;
 }
 
 function genderLabel(gender) {
@@ -7285,7 +7506,6 @@ async function loadProductReviews(productId) {
       return;
     }
 
-    // Средний рейтинг
     const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
     const avg = (totalRating / reviews.length).toFixed(1);
 
@@ -7295,15 +7515,14 @@ async function loadProductReviews(productId) {
       <span class="count">· ${reviews.length}</span>
     `;
 
-    // Список
     reviews.forEach(r => {
       const date = new Date(r.created_at);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 
-          let photosHtml = '';
+      let photosHtml = '';
       if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
         const safeArr = r.photo_urls.map(u => `'${escapeHtml(u)}'`).join(',');
-        photosHtml = '<div class="review-card-photos">' +
+        photosHtml = '<div class="review-card-photos" style="margin-top:8px;">' +
           r.photo_urls.map((url, i) =>
             `<img class="review-card-photo" src="${escapeHtml(url)}" onclick="openPhotoViewer([${safeArr}], ${i})">`
           ).join('') +
@@ -7331,6 +7550,7 @@ async function loadProductReviews(productId) {
 }
     // === ОТЗЫВ О ТОВАРЕ ===
 let productReviewTargetId = null;
+let productReviewPhotos = [];
 let productReviewRating = 0;
 
  async function loadRelatedProducts(product) {
@@ -7416,7 +7636,7 @@ let productReviewRating = 0;
     // Очищаем скелетоны и рисуем карточки
     trackEl.innerHTML = '';
 
-    related.forEach(p => {
+       related.forEach(p => {
       let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400';
       if (p.image_urls) {
         const arr = Array.isArray(p.image_urls) ? p.image_urls : [p.image_urls];
@@ -7427,6 +7647,11 @@ let productReviewRating = 0;
       const cardClass = inStock ? 'modal-related-card' : 'modal-related-card sold';
       const soldOverlay = inStock ? '' : '<div class="modal-related-sold"><span>Продано</span></div>';
       const isFav = favorites.includes(String(p.id));
+
+      const r = productRatings[String(p.id)] || productRatings[p.id];
+      const ratingHtml = (r && r.count)
+        ? `<div class="modal-related-rating">${STAR_ICON}<span>${r.avg}</span></div>`
+        : '';
 
       trackEl.innerHTML += `
         <div class="${cardClass}" onclick="openRelatedProduct(${p.id})">
@@ -7440,6 +7665,7 @@ let productReviewRating = 0;
             </div>
           </div>
           <div class="modal-related-info">
+            ${ratingHtml}
             <div class="modal-related-price">${Number(p.price || 0).toLocaleString('ru-RU')} so'm</div>
             <div class="modal-related-name">${escapeHtml(p.title || 'Без названия')}</div>
           </div>
@@ -7513,6 +7739,7 @@ function toggleFavFromRelated(e, id) {
 function openProductReviewComposer(productId, productTitle) {
   productReviewTargetId = productId;
   productReviewRating = 0;
+  productReviewPhotos = [];
 
   document.getElementById('product-review-product-name').innerText = productTitle || '';
   document.getElementById('product-review-text').value = '';
@@ -7522,9 +7749,10 @@ function openProductReviewComposer(productId, productTitle) {
     s.innerText = '☆';
   });
 
+  renderProductReviewPhotosPreview();
+
   document.getElementById('product-review-composer').classList.add('active');
 }
-
 function closeProductReviewComposer() {
   document.getElementById('product-review-composer').classList.remove('active');
   productReviewTargetId = null;
@@ -7581,16 +7809,19 @@ async function submitProductReview() {
       text: text,
       is_approved: false,
       product_id: Number(productReviewTargetId),
-      shop_ids: shopId ? [shopId] : []
+      shop_ids: shopId ? [shopId] : [],
+      photo_urls: productReviewPhotos
     };
 
     const { error } = await client.from('reviews').insert(insertData);
     if (error) throw error;
 
     showAlert('Спасибо! Ваш отзыв появится после проверки модератором.');
+
+    productReviewPhotos = [];
+    renderProductReviewPhotosPreview();
     closeProductReviewComposer();
 
-    // Обновляем список заказов — чтобы кнопка стала "✓ Отзыв оставлен"
     loadMyOrders();
 
   } catch (err) {
