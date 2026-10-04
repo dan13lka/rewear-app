@@ -326,7 +326,145 @@
   white-space: pre-line;
   margin: 0;
 }
-    
+    /* РЕКОМЕНДУЕМ ТАКЖЕ */
+.modal-related-block {
+  margin-bottom: 110px; /* отступ снизу, чтобы кнопки не перекрывали */
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modal-related-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  margin-bottom: 14px;
+}
+
+.modal-related-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* выходим за края модалки для красивой обрезки */
+  margin: 0 -16px;
+  padding: 0 16px 6px;
+}
+
+.modal-related-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* КАРТОЧКА */
+.modal-related-card {
+  flex: 0 0 152px;
+  scroll-snap-align: start;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.modal-related-card:active {
+  transform: scale(0.97);
+  border-color: #333;
+}
+
+/* КАРТИНКА — квадратная, как на Ozon */
+.modal-related-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #222;
+  overflow: hidden;
+}
+
+.modal-related-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ИКОНКА ИЗБРАННОГО */
+.modal-related-fav {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.modal-related-fav svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Плашка "Продано" */
+.modal-related-sold {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.modal-related-sold span {
+  background: rgba(255, 77, 77, 0.95);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+.modal-related-card.sold .modal-related-img {
+  filter: grayscale(0.6) brightness(0.5);
+}
+
+/* ИНФО */
+.modal-related-info {
+  padding: 10px 10px 12px;
+}
+
+.modal-related-price {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+  letter-spacing: -0.2px;
+}
+
+.modal-related-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8c8c8c;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 30px;
+}
     .modal-actions { position: fixed; bottom: 20px; left: 16px; right: 16px; display: flex; gap: 10px; z-index: 102; }
         .btn-cart-add {
       flex: 1;
@@ -3177,6 +3315,11 @@
   <div id="m-reviews-empty" class="product-reviews-empty" style="display: none;">
     Пока нет отзывов об этом товаре
   </div>
+</div>/
+    <!-- РЕКОМЕНДУЕМ ТАКЖЕ -->
+<div class="modal-related-block" id="m-related-block" style="display: none;">
+  <div class="modal-related-title">Рекомендуем также</div>
+  <div class="modal-related-track" id="m-related-track"></div>
 </div>
     
         <div class="modal-actions">
@@ -4486,7 +4629,9 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   updateModalFavIcon(p.id);
   // Загружаем отзывы товара
   loadProductReviews(p.id);
-
+  // Загружаем рекомендации
+  loadRelatedProducts(p);
+     
   document.getElementById('product-modal').style.display = 'block';
   tg.BackButton.show();
   tg.BackButton.onClick(closeProduct);
@@ -6939,7 +7084,165 @@ async function loadProductReviews(productId) {
     // === ОТЗЫВ О ТОВАРЕ ===
 let productReviewTargetId = null;
 let productReviewRating = 0;
+async function loadRelatedProducts(product) {
+  const blockEl = document.getElementById('m-related-block');
+  const trackEl = document.getElementById('m-related-track');
 
+  if (!blockEl || !trackEl) return;
+
+  blockEl.style.display = 'none';
+  trackEl.innerHTML = '';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 1. Сначала — товары той же категории
+    let related = [];
+    if (product.category) {
+      const { data } = await client
+        .from('products')
+        .select('*')
+        .neq('id', product.id)
+        .ilike('category', product.category)
+        .limit(12);
+      related = data || [];
+    }
+
+    // 2. Если мало — добираем товарами того же магазина
+    if (related.length < 4 && product.shop_id) {
+      const { data } = await client
+        .from('products')
+        .select('*')
+        .neq('id', product.id)
+        .eq('shop_id', product.shop_id)
+        .limit(12);
+
+      if (data) {
+        const existingIds = new Set(related.map(p => p.id));
+        data.forEach(p => {
+          if (!existingIds.has(p.id)) related.push(p);
+        });
+      }
+    }
+
+    // 3. Если всё ещё мало — любые товары каталога
+    if (related.length < 4) {
+      const { data } = await client
+        .from('products')
+        .select('*')
+        .neq('id', product.id)
+        .limit(12);
+
+      if (data) {
+        const existingIds = new Set(related.map(p => p.id));
+        data.forEach(p => {
+          if (!existingIds.has(p.id)) related.push(p);
+        });
+      }
+    }
+
+    // Оставляем не больше 12
+    related = related.slice(0, 12);
+
+    if (related.length === 0) return;
+
+    related.forEach(p => {
+      let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400';
+      if (p.image_urls) {
+        const arr = Array.isArray(p.image_urls) ? p.image_urls : [p.image_urls];
+        if (arr[0]) imgUrl = String(arr[0]).replace(/[\{\}\"\']/g, '').trim();
+      }
+
+      const inStock = p.in_stock !== false;
+      const cardClass = inStock ? 'modal-related-card' : 'modal-related-card sold';
+      const soldOverlay = inStock ? '' : '<div class="modal-related-sold"><span>Продано</span></div>';
+
+      const isFav = favorites.includes(String(p.id));
+
+      trackEl.innerHTML += `
+        <div class="${cardClass}" onclick="openRelatedProduct(${p.id})">
+          <div class="modal-related-img-wrap">
+            <img class="modal-related-img" src="${imgUrl}" alt="${escapeHtml(p.title || '')}">
+            ${soldOverlay}
+            <div class="modal-related-fav" onclick="event.stopPropagation(); toggleFavFromRelated(event, '${p.id}')">
+              <svg viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#ffffff'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="modal-related-info">
+            <div class="modal-related-price">${Number(p.price || 0).toLocaleString('ru-RU')} so'm</div>
+            <div class="modal-related-name">${escapeHtml(p.title || 'Без названия')}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    blockEl.style.display = 'block';
+
+  } catch (err) {
+    console.error('Ошибка загрузки рекомендаций:', err);
+    blockEl.style.display = 'none';
+  }
+}
+
+// Переход к рекомендованному товару
+async function openRelatedProduct(productId) {
+  const index = loadedProducts.findIndex(p => String(p.id) === String(productId));
+  if (index !== -1) {
+    openProduct(index);
+    // Скролл модалки наверх, чтобы не остались внизу
+    document.getElementById('product-modal').scrollTop = 0;
+    return;
+  }
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: product, error } = await client
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .single();
+
+    if (error) throw error;
+    if (!product) return;
+
+    loadedProducts.push(product);
+    openProduct(loadedProducts.length - 1);
+    document.getElementById('product-modal').scrollTop = 0;
+  } catch (err) {
+    console.error('Ошибка перехода к товару:', err);
+    tg.showAlert('Не удалось открыть товар');
+  }
+}
+
+// Переключение избранного из рекомендаций
+function toggleFavFromRelated(e, id) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  const strId = String(id);
+  if (favorites.includes(strId)) {
+    favorites = favorites.filter(item => item !== strId);
+  } else {
+    favorites.push(strId);
+  }
+
+  saveState();
+
+  // Обновляем иконку прямо в карточке
+  const card = e.target.closest('.modal-related-card');
+  if (card) {
+    const svg = card.querySelector('.modal-related-fav svg');
+    const isFav = favorites.includes(strId);
+    if (svg) {
+      svg.setAttribute('fill', isFav ? '#ff4d4d' : 'none');
+      svg.setAttribute('stroke', isFav ? '#ff4d4d' : '#ffffff');
+    }
+  }
+}
 function openProductReviewComposer(productId, productTitle) {
   productReviewTargetId = productId;
   productReviewRating = 0;
