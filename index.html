@@ -1755,6 +1755,88 @@
   border-radius: 8px;
   flex-shrink: 0;
 }
+   /* СПИСОК МАГАЗИНОВ В СТАТИСТИКЕ */
+.shopstats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.shopstats-row:active {
+  border-color: #444;
+}
+.shopstats-row-left {
+  min-width: 0;
+  flex: 1;
+}
+.shopstats-row-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.shopstats-row-meta {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+.shopstats-row-meta span {
+  margin-right: 10px;
+}
+.shopstats-row-arrow {
+  color: #666;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ТОВАРЫ В ДЕТАЛЯХ МАГАЗИНА */
+.shopstats-product {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.shopstats-product-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #222;
+  flex-shrink: 0;
+}
+.shopstats-product-info {
+  flex: 1;
+  min-width: 0;
+}
+.shopstats-product-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.shopstats-product-meta {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+.shopstats-product-meta span {
+  margin-right: 8px;
+}
 
 .admin-tab-content {
   display: none;
@@ -3673,6 +3755,7 @@
     <button class="admin-tab" onclick="switchAdminTab('reviews', this)">Отзывы</button>
     <button class="admin-tab" onclick="switchAdminTab('promo', this)">Промокоды</button>
     <button class="admin-tab" onclick="switchAdminTab('stats', this)">Статистика</button>
+    <button class="admin-tab" onclick="switchAdminTab('shopstats', this)">Статистика магазинов</button>
   </div>
 
   <!-- Раздел: ТОВАРЫ -->
@@ -3734,6 +3817,28 @@
     </div>
   </div>
 </div>
+   <!-- Раздел: СТАТИСТИКА МАГАЗИНОВ -->
+  <div id="admin-tab-shopstats" class="admin-tab-content">
+    <div class="form-group">
+      <label class="form-label">Период</label>
+      <select id="shopstats-days" class="form-select" onchange="loadShopStatsList()">
+        <option value="1">За 24 часа</option>
+        <option value="7" selected>За 7 дней</option>
+        <option value="30">За 30 дней</option>
+        <option value="90">За 90 дней</option>
+      </select>
+    </div>
+
+    <div id="shopstats-list">
+      <div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>
+    </div>
+
+    <!-- Экран деталей магазина -->
+    <div id="shopstats-detail" style="display:none;">
+      <button class="admin-add-btn" style="background:#1a1a1a;color:#ffffff;margin-bottom:16px;" onclick="closeShopStatsDetail()">← К списку магазинов</button>
+      <div id="shopstats-detail-content"></div>
+    </div>
+  </div>
 <!-- МОДАЛКА ФОРМЫ ТОВАРА -->
 <div id="product-form-modal" class="modal">
   <button class="modal-close" onclick="closeProductForm()">
@@ -5871,8 +5976,144 @@ function switchAdminTab(tabName, element) {
   if (tabName === 'reviews') loadAdminReviews();
   if (tabName === 'promo') loadAdminPromo();
   if (tabName === 'stats') loadAdminStats();
+  if (tabName === 'shopstats') loadShopStatsList();
+}
+async function loadShopStatsList() {
+  const listEl = document.getElementById('shopstats-list');
+  const detailEl = document.getElementById('shopstats-detail');
+  const days = Number(document.getElementById('shopstats-days').value) || 7;
+
+  detailEl.style.display = 'none';
+  listEl.style.display = 'block';
+  listEl.innerHTML = `<div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>`;
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'stats_shops_list',
+        payload: { days }
+      })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка');
+
+    const shops = json.data.shops || [];
+
+    if (shops.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center;color:#666;font-size:12px;padding:16px 0;">Магазинов пока нет</div>`;
+      return;
+    }
+
+    listEl.innerHTML = shops.map(s => `
+      <div class="shopstats-row" onclick="openShopStatsDetail(${s.id})">
+        <div class="shopstats-row-left">
+          <div class="shopstats-row-name">${escapeHtml(s.name)}${s.is_active ? '' : ' <span style="color:#8c8c8c;font-weight:500;">(выкл.)</span>'}</div>
+          <div class="shopstats-row-meta">
+            <span>👁 ${s.views}</span>
+            <span>❤️ ${s.fav_adds}</span>
+            <span>🛒 ${s.cart_adds}</span>
+            <span>👤 ${s.unique_users}</span>
+            <span>📦 ${s.products_count}</span>
+          </div>
+        </div>
+        <div class="shopstats-row-arrow">›</div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error('Ошибка статистики магазинов:', err);
+    listEl.innerHTML = `<div style="text-align:center;color:#ff6b6b;padding:30px 0;font-size:13px;">Не удалось загрузить</div>`;
+  }
 }
 
+async function openShopStatsDetail(shopId) {
+  const listEl = document.getElementById('shopstats-list');
+  const detailEl = document.getElementById('shopstats-detail');
+  const contentEl = document.getElementById('shopstats-detail-content');
+  const days = Number(document.getElementById('shopstats-days').value) || 7;
+
+  listEl.style.display = 'none';
+  detailEl.style.display = 'block';
+  contentEl.innerHTML = `<div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>`;
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'stats_shop_detail',
+        payload: { days, shop_id: shopId }
+      })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка');
+
+    const d = json.data;
+    const t = d.totals;
+
+    const productsHtml = d.products.length === 0
+      ? `<div style="text-align:center;color:#666;font-size:12px;padding:16px 0;">У магазина нет товаров</div>`
+      : d.products.map(p => {
+          const img = p.image_url
+            ? `<img class="shopstats-product-img" src="${escapeHtml(p.image_url)}" alt="">`
+            : `<div class="shopstats-product-img"></div>`;
+
+          return `
+            <div class="shopstats-product">
+              ${img}
+              <div class="shopstats-product-info">
+                <div class="shopstats-product-title">${escapeHtml(p.title)}${p.in_stock ? '' : ' · <span style="color:#ff6b6b;">продано</span>'}</div>
+                <div class="shopstats-product-meta">
+                  <span>👁 ${p.views}</span>
+                  <span>❤️ ${p.fav_adds}</span>
+                  <span>🛒 ${p.cart_adds}</span>
+                  <span>👤 ${p.unique_users}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+    contentEl.innerHTML = `
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:14px;">${escapeHtml(d.shop.name)}</div>
+
+      <div class="stats-grid">
+        <div class="stats-card">
+          <div class="stats-card-label">Просмотры</div>
+          <div class="stats-card-value">${t.views}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Уник. посетителей</div>
+          <div class="stats-card-value">${t.unique_users}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Добавления в избранное</div>
+          <div class="stats-card-value">${t.fav_adds}</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-label">Добавления в корзину</div>
+          <div class="stats-card-value">${t.cart_adds}</div>
+        </div>
+      </div>
+
+      <div class="form-label" style="margin-top:16px;">Товары магазина (${d.products.length})</div>
+      ${productsHtml}
+    `;
+
+  } catch (err) {
+    console.error('Ошибка деталей магазина:', err);
+    contentEl.innerHTML = `<div style="text-align:center;color:#ff6b6b;padding:30px 0;font-size:13px;">Не удалось загрузить</div>`;
+  }
+}
+
+function closeShopStatsDetail() {
+  document.getElementById('shopstats-list').style.display = 'block';
+  document.getElementById('shopstats-detail').style.display = 'none';
+}
 // === ТОВАРЫ В АДМИНКЕ ===
 async function loadAdminProducts() {
   const listEl = document.getElementById('admin-products-list');
