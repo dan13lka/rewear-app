@@ -3716,7 +3716,7 @@
       Промокодов пока нет
     </div>
   </div>
-</div>
+
   <!-- Раздел: СТАТИСТИКА -->
   <div id="admin-tab-stats" class="admin-tab-content">
     <div class="form-group">
@@ -3733,6 +3733,7 @@
       <div style="text-align:center;color:#8c8c8c;padding:30px 0;font-size:13px;">Загрузка...</div>
     </div>
   </div>
+</div>
 <!-- МОДАЛКА ФОРМЫ ТОВАРА -->
 <div id="product-form-modal" class="modal">
   <button class="modal-close" onclick="closeProductForm()">
@@ -4545,8 +4546,9 @@ function toggleFav(e, id) {
     if (promoSuccess) promoSuccess.style.display = 'none';
   }
 
-    saveState();
+  saveState();
   renderCart();
+  trackEvent('cart_remove', strId);
 
   // Обновляем кнопку в модалке
   const cartBtn = document.getElementById('m-cart-btn');
