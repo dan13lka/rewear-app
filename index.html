@@ -5282,39 +5282,7 @@ async function loadReviews() {
     emptyEl.style.display = 'block';
     emptyEl.innerText = 'Не удалось загрузить отзывы.';
   }
-}
-      // ФОТО ОТЗЫВА
-      let photosHtml = '';
-      if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
-        const safeArr = r.photo_urls.map(u => `'${escapeHtml(u)}'`).join(',');
-        photosHtml = '<div class="review-card-photos">' +
-          r.photo_urls.map((url, i) =>
-            `<img class="review-card-photo" src="${escapeHtml(url)}" onclick="openPhotoViewer([${safeArr}], ${i})">`
-          ).join('') +
-        '</div>';
-      }
-
-      feedEl.innerHTML += `
-        <div class="review-card">
-          <div class="review-card-header">
-            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
-            <div class="review-card-date">${dateStr}</div>
-          </div>
-          <div class="review-card-stars">${renderStars(r.rating)}</div>
-          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
-          ${photosHtml}
-          ${shopsTagsHtml}
-        </div>
-      `;
-    });
-
-  } catch (err) {
-    console.error('Ошибка загрузки отзывов:', err);
-    emptyEl.style.display = 'block';
-    emptyEl.innerText = 'Не удалось загрузить отзывы.';
-  }
-}
-
+}    
 function renderStars(rating) {
   let s = '';
   for (let i = 1; i <= 5; i++) s += i <= rating ? '★' : '☆';
