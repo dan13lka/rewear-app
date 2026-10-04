@@ -375,6 +375,58 @@
   transform: scale(0.97);
   border-color: #333;
 }
+    /* СКЕЛЕТОН РЕКОМЕНДАЦИЙ */
+.modal-related-skeleton {
+  flex: 0 0 152px;
+  scroll-snap-align: start;
+  background: #161616;
+  border: 1px solid #222;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.modal-related-skeleton-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #1f1f1f;
+}
+
+.modal-related-skeleton-info {
+  padding: 10px 10px 12px;
+}
+
+.modal-related-skeleton-line {
+  height: 12px;
+  background: #1f1f1f;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.modal-related-skeleton-line.price {
+  height: 15px;
+  width: 55%;
+  margin-bottom: 8px;
+}
+
+.modal-related-skeleton-line.title {
+  width: 90%;
+}
+
+.modal-related-skeleton-line.title.short {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+/* Мягкая пульсация */
+.modal-related-skeleton-img,
+.modal-related-skeleton-line {
+  animation: relatedPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes relatedPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
 
 /* КАРТИНКА — квадратная, как на Ozon */
 .modal-related-img-wrap {
@@ -3315,7 +3367,7 @@
   <div id="m-reviews-empty" class="product-reviews-empty" style="display: none;">
     Пока нет отзывов об этом товаре
   </div>
-</div>/
+</div>
     <!-- РЕКОМЕНДУЕМ ТАКЖЕ -->
 <div class="modal-related-block" id="m-related-block" style="display: none;">
   <div class="modal-related-title">Рекомендуем также</div>
@@ -7084,19 +7136,35 @@ async function loadProductReviews(productId) {
     // === ОТЗЫВ О ТОВАРЕ ===
 let productReviewTargetId = null;
 let productReviewRating = 0;
-async function loadRelatedProducts(product) {
+
+ async function loadRelatedProducts(product) {
   const blockEl = document.getElementById('m-related-block');
   const trackEl = document.getElementById('m-related-track');
 
   if (!blockEl || !trackEl) return;
 
-  blockEl.style.display = 'none';
+  // Показываем блок сразу со скелетонами
+  blockEl.style.display = 'block';
   trackEl.innerHTML = '';
+
+  // Рисуем 4 скелетона (можно и больше — под ширину экрана)
+  for (let i = 0; i < 4; i++) {
+    trackEl.innerHTML += `
+      <div class="modal-related-skeleton">
+        <div class="modal-related-skeleton-img"></div>
+        <div class="modal-related-skeleton-info">
+          <div class="modal-related-skeleton-line price"></div>
+          <div class="modal-related-skeleton-line title"></div>
+          <div class="modal-related-skeleton-line title short"></div>
+        </div>
+      </div>
+    `;
+  }
 
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 1. Сначала — товары той же категории
+    // 1. Товары той же категории
     let related = [];
     if (product.category) {
       const { data } = await client
@@ -7108,7 +7176,7 @@ async function loadRelatedProducts(product) {
       related = data || [];
     }
 
-    // 2. Если мало — добираем товарами того же магазина
+    // 2. Добираем товарами того же магазина
     if (related.length < 4 && product.shop_id) {
       const { data } = await client
         .from('products')
@@ -7125,7 +7193,7 @@ async function loadRelatedProducts(product) {
       }
     }
 
-    // 3. Если всё ещё мало — любые товары каталога
+    // 3. Добираем любыми из каталога
     if (related.length < 4) {
       const { data } = await client
         .from('products')
@@ -7141,10 +7209,16 @@ async function loadRelatedProducts(product) {
       }
     }
 
-    // Оставляем не больше 12
     related = related.slice(0, 12);
 
-    if (related.length === 0) return;
+    // Если ничего не нашли — просто скрываем блок
+    if (related.length === 0) {
+      blockEl.style.display = 'none';
+      return;
+    }
+
+    // Очищаем скелетоны и рисуем карточки
+    trackEl.innerHTML = '';
 
     related.forEach(p => {
       let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400';
@@ -7156,7 +7230,6 @@ async function loadRelatedProducts(product) {
       const inStock = p.in_stock !== false;
       const cardClass = inStock ? 'modal-related-card' : 'modal-related-card sold';
       const soldOverlay = inStock ? '' : '<div class="modal-related-sold"><span>Продано</span></div>';
-
       const isFav = favorites.includes(String(p.id));
 
       trackEl.innerHTML += `
@@ -7178,14 +7251,12 @@ async function loadRelatedProducts(product) {
       `;
     });
 
-    blockEl.style.display = 'block';
-
   } catch (err) {
     console.error('Ошибка загрузки рекомендаций:', err);
+    // При ошибке прячем блок
     blockEl.style.display = 'none';
   }
 }
-
 // Переход к рекомендованному товару
 async function openRelatedProduct(productId) {
   const index = loadedProducts.findIndex(p => String(p.id) === String(productId));
