@@ -8,7 +8,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0d0d0d !important; color: #ffffff !important; padding: 16px; padding-bottom: 90px; }
+    body { 
+  background-color: #0d0d0d !important; 
+  color: #ffffff !important; 
+  padding: 16px; 
+  padding-bottom: 90px; 
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(90px, env(safe-area-inset-bottom, 0px));
+}
 
     
     /* ШАПКА */
@@ -4286,8 +4293,17 @@
   </div>
 </div>
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+  const tg = window.Telegram.WebApp;
+tg.expand();
+
+// Проверяем доступность метода
+if (typeof tg.requestFullscreen === 'function') {
+  try {
+    tg.requestFullscreen();
+  } catch (e) {
+    console.log('Fullscreen недоступен:', e);
+  }
+}
     const SUPABASE_URL = 'https://lseatoyffptmjljinswp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZWF0b3lmZnB0bWpsamluc3dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MDA2MTEsImV4cCI6MjEwNjI3NjYxMX0.Cv10pBFfb8VwlLgVI-jVrjZ1Bregum2NozVKYwxs6tM';
     const ADMIN_USERNAME = 'uz_rewear'; 
