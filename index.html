@@ -2719,6 +2719,23 @@
 .card-meta { display: flex; align-items: center; gap: 6px; }
 .card-meta .cat-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
+   /* ЗНАЧОК ДОСТАВКИ В КАРТОЧКЕ */
+.card-delivery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: #8c8c8c;
+  font-weight: 600;
+}
+.card-delivery svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  stroke: #8c8c8c;
+}
+
 .gender-badge {
   display: inline-flex;
   align-items: center;
@@ -3298,6 +3315,18 @@
   margin-bottom: 20px;
   font-weight: 600;
 }    
+   /* ПЛАШКА ДОСТАВКИ В МОДАЛКЕ */
+.tag.delivery-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag.delivery-tag svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: #a0a0a0;
+}
   </style>
 </head>
 <body>
@@ -3612,9 +3641,10 @@
 </div>
     <div id="m-title" class="modal-title"></div>
     <div id="m-price" class="modal-price"></div>
-   <div class="modal-tags">
+    <div class="modal-tags">
   <span id="m-category" class="tag"></span>
   <span id="m-gender" class="tag gender-tag"></span>
+  <span id="m-delivery" class="tag delivery-tag" style="display: none;"></span>
 </div>
 <div class="size-section" id="m-size-section" style="display: none;">
   <div class="size-label">Выберите размер:</div>
@@ -3882,6 +3912,11 @@
       <option value="female">♀ Женское</option>
     </select>
   </div>
+
+ <div class="form-group">
+  <label class="form-label">Срок доставки (дней)</label>
+  <input type="number" id="pf-delivery-days" class="form-input" placeholder="Например: 14" min="1" max="60">
+</div>
 
   <div class="form-group">
     <label class="form-label">Размеры (через запятую)</label>
@@ -4457,13 +4492,14 @@ async function loadProductRatings() {
           ${soldOverlay}
           ${ratingHtml}
         </div>
-        <div class="card-info">
+             <div class="card-info">
           <div class="card-shop">${shopName}</div>
           <div class="card-title">${product.title || 'Без названия'}</div>
           <div class="card-price">${priceVal} сум</div>
           <div class="card-meta">${genderBadgeHtml(product.gender)}
             <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
           </div>
+          ${deliveryBadgeHtml(product.delivery_days)}
         </div>
       </div>
     `;
@@ -5014,6 +5050,24 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
    document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
    document.getElementById('m-gender').innerHTML =
     genderBadgeHtml(p.gender) + `<span>${genderLabel(p.gender)}</span>`;
+      // Плашка срока доставки
+  const deliveryEl = document.getElementById('m-delivery');
+  if (p.delivery_days && Number(p.delivery_days) > 0) {
+    const n = Number(p.delivery_days);
+    const word = declOfNum(n, ['день', 'дня', 'дней']);
+    deliveryEl.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg>
+      <span>до ${n} ${word}</span>
+    `;
+    deliveryEl.style.display = 'inline-flex';
+  } else {
+    deliveryEl.style.display = 'none';
+  }
 
   // Проверяем наличие
    const inStock = p.in_stock !== false;
@@ -6194,6 +6248,7 @@ async function openProductForm() {
   document.getElementById('pf-description').value = '';
   document.getElementById('pf-instock').value = 'true';
   document.getElementById('pf-gender').value = 'unisex';
+  document.getElementById('pf-delivery-days').value = '';
 
   renderPhotosPreview();
 
@@ -6235,6 +6290,7 @@ async function editProduct(id) {
     document.getElementById('pf-category').value = p.category || '';
     document.getElementById('pf-shop-id').value = p.shop_id || '';
     document.getElementById('pf-gender').value = p.gender || 'unisex';
+    document.getElementById('pf-delivery-days').value = p.delivery_days || '';
     
     // Размеры
     let sizesStr = '';
@@ -6274,6 +6330,8 @@ async function saveProduct() {
   const shopId = shopIdRaw ? Number(shopIdRaw) : null;
   const sizesStr = document.getElementById('pf-sizes').value.trim();
   const gender = document.getElementById('pf-gender').value;
+  const deliveryDaysRaw = document.getElementById('pf-delivery-days').value.trim();
+  const deliveryDays = deliveryDaysRaw ? Number(deliveryDaysRaw) : null;
   const imagesStr = document.getElementById('pf-images').value.trim();
   const description = document.getElementById('pf-description').value.trim();
   const inStock = document.getElementById('pf-instock').value === 'true';
@@ -6296,12 +6354,13 @@ async function saveProduct() {
     : [];
   const allImages = [...new Set([...uploadedPhotos, ...urlsFromTextarea])];
 
-  const productData = {
+   const productData = {
     title,
     price,
     category,
     shop_id: shopId,
     gender: gender,
+    delivery_days: deliveryDays,
     sizes: sizesArr,
     image_urls: allImages,
     description,
@@ -8346,6 +8405,26 @@ async function submitProductReview() {
     showAlert('Не удалось отправить отзыв: ' + err.message);
   }
 }
+// === ЗНАЧОК ДОСТАВКИ ===
+function deliveryBadgeHtml(days) {
+  if (!days || Number(days) <= 0) return '';
+
+  const n = Number(days);
+  const word = declOfNum(n, ['день', 'дня', 'дней']);
+
+  return `
+    <div class="card-delivery">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg>
+      <span>до ${n} ${word}</span>
+    </div>
+  `;
+}
+   
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
