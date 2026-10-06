@@ -301,7 +301,20 @@
     .modal-price { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
     
     .modal-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tag { background: #1a1a1a; border: 1px solid #2a2a2a; padding: 6px 12px; border-radius: 8px; font-size: 12px; color: #a0a0a0; }
+    .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #a0a0a0;
+  line-height: 1;
+  min-height: 32px;
+  box-sizing: border-box;
+}
     .modal-desc-block {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -2510,11 +2523,20 @@
 }
 
 .shop-rating {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   margin-bottom: 12px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.shop-rating:active {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .shop-rating-stars {
@@ -3327,6 +3349,56 @@
   flex-shrink: 0;
   stroke: #a0a0a0;
 }
+   /* ОТЗЫВЫ МАГАЗИНА — ОТДЕЛЬНЫЙ ЭКРАН */
+.shop-reviews-summary {
+  text-align: center;
+  padding: 28px 16px 20px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.shop-reviews-summary-rating {
+  font-size: 44px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.shop-reviews-summary-stars {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: #ffb800;
+  margin-bottom: 6px;
+}
+.shop-reviews-summary-count {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+/* ПЛАШКА ТОВАРА В ОТЗЫВЕ */
+.review-product-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 184, 0, 0.08);
+  border: 1px solid rgba(255, 184, 0, 0.2);
+  color: #ffb800;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.review-product-tag:active {
+  background: rgba(255, 184, 0, 0.16);
+}
+.review-product-tag svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+}
   </style>
 </head>
 <body>
@@ -3745,9 +3817,9 @@
   <div class="shop-header">
     <div id="shop-avatar" class="shop-avatar">?</div>
     <div class="shop-name" id="shop-name">Магазин</div>
-    <div id="shop-rating" class="shop-rating" style="display: none;">
-      <span id="shop-rating-stars" class="shop-rating-stars"></span>
-      <span id="shop-rating-text" class="shop-rating-text"></span>
+     <div id="shop-rating" class="shop-rating" onclick="openShopReviewsScreen()">
+      <span id="shop-rating-stars" class="shop-rating-stars">☆☆☆☆☆</span>
+      <span id="shop-rating-text" class="shop-rating-text">Пока нет отзывов</span>
     </div>
     <div id="shop-description" class="shop-description"></div>
     <div id="shop-contacts" class="shop-contacts" style="display: none;"></div>
@@ -3758,12 +3830,33 @@
   <div id="shop-products-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
     У этого магазина пока нет товаров
   </div>
+ <!-- ЭКРАН ОТЗЫВОВ МАГАЗИНА -->
+<div id="shop-reviews-screen" class="reviews-screen">
+  <div class="reviews-topbar">
+    <button class="reviews-back-btn" onclick="closeShopReviewsScreen()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <div class="reviews-topbar-title" id="shop-reviews-topbar-title">Отзывы магазина</div>
+    <div style="width: 22px;"></div>
+  </div>
 
-  <div class="shop-section-title" style="margin-top: 24px;">Отзывы</div>
-  <div class="reviews-feed" id="shop-reviews-feed" style="padding: 0 16px;"></div>
-  <div id="shop-reviews-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 40px 20px; font-size: 13px;">
+  <!-- Сводка рейтинга -->
+  <div class="shop-reviews-summary" id="shop-reviews-summary" style="display: none;">
+    <div class="shop-reviews-summary-rating" id="shop-reviews-summary-rating">—</div>
+    <div class="shop-reviews-summary-stars" id="shop-reviews-summary-stars"></div>
+    <div class="shop-reviews-summary-count" id="shop-reviews-summary-count"></div>
+  </div>
+
+  <!-- Лента отзывов -->
+  <div class="reviews-feed" id="shop-reviews-feed"></div>
+
+  <div id="shop-reviews-empty" style="display: none; text-align: center; color: #8c8c8c; padding: 60px 20px; font-size: 13px;">
     Пока нет отзывов об этом магазине
   </div>
+</div>
 </div>
   <!-- ЭКРАН АДМИНКИ -->
 <div id="admin-screen" class="reviews-screen">
@@ -5054,7 +5147,7 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   const deliveryEl = document.getElementById('m-delivery');
   if (p.delivery_days && Number(p.delivery_days) > 0) {
     const n = Number(p.delivery_days);
-    const word = declOfNum(n, ['день', 'дня', 'дней']);
+    const word = 'дней';
     deliveryEl.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="1" y="3" width="15" height="13"></rect>
@@ -7511,64 +7604,35 @@ async function openProductByIdFromShop(productId) {
 }
 
 async function loadShopReviews(shopId) {
-  const feedEl = document.getElementById('shop-reviews-feed');
-  const emptyEl = document.getElementById('shop-reviews-empty');
+  // Показываем дефолт — 5 серых звёзд + "нет отзывов"
+  const ratingEl = document.getElementById('shop-rating');
+  const starsEl = document.getElementById('shop-rating-stars');
+  const textEl = document.getElementById('shop-rating-text');
 
-  feedEl.innerHTML = '';
-  emptyEl.style.display = 'none';
+  ratingEl.style.display = 'inline-flex';
+  starsEl.innerText = '☆☆☆☆☆';
+  textEl.innerText = 'Пока нет отзывов';
 
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Загружаем одобренные отзывы, у которых shop_ids содержит этот магазин
     const { data: reviews, error } = await client
       .from('reviews')
-      .select('*')
+      .select('rating')
       .eq('is_approved', true)
-      .contains('shop_ids', [shopId])
-      .order('created_at', { ascending: false });
+      .contains('shop_ids', [shopId]);
 
     if (error) throw error;
+    if (!reviews || reviews.length === 0) return;
 
-    if (!reviews || reviews.length === 0) {
-      emptyEl.style.display = 'block';
-      return;
-    }
-
-    // Считаем средний рейтинг
     const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
     const avg = (totalRating / reviews.length).toFixed(1);
 
-    // Показываем рейтинг
-    const ratingEl = document.getElementById('shop-rating');
-    const starsEl = document.getElementById('shop-rating-stars');
-    const textEl = document.getElementById('shop-rating-text');
-
     starsEl.innerText = renderStars(Math.round(avg));
     textEl.innerText = `${avg} · ${reviews.length} ${declOfNum(reviews.length, ['отзыв', 'отзыва', 'отзывов'])}`;
-    ratingEl.style.display = 'flex';
-
-    // Рендерим отзывы
-    reviews.forEach(r => {
-      const date = new Date(r.created_at);
-      const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
-
-      feedEl.innerHTML += `
-        <div class="review-card">
-          <div class="review-card-header">
-            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
-            <div class="review-card-date">${dateStr}</div>
-          </div>
-          <div class="review-card-stars">${renderStars(r.rating)}</div>
-          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
-        </div>
-      `;
-    });
 
   } catch (err) {
-    console.error('Ошибка загрузки отзывов магазина:', err);
-    emptyEl.style.display = 'block';
-    emptyEl.innerText = 'Ошибка загрузки';
+    console.error('Ошибка загрузки рейтинга магазина:', err);
   }
 }
   function openShopFromProduct() {
@@ -8410,7 +8474,7 @@ function deliveryBadgeHtml(days) {
   if (!days || Number(days) <= 0) return '';
 
   const n = Number(days);
-  const word = declOfNum(n, ['день', 'дня', 'дней']);
+  const word ='дней';
 
   return `
     <div class="card-delivery">
@@ -8424,7 +8488,166 @@ function deliveryBadgeHtml(days) {
     </div>
   `;
 }
-   
+   // === ОТЗЫВЫ МАГАЗИНА (ОТДЕЛЬНОЕ ОКНО) ===
+async function openShopReviewsScreen() {
+  if (!currentShopId) return;
+
+  document.getElementById('shop-reviews-screen').classList.add('active');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeShopReviewsScreen);
+
+  // Заголовок с названием магазина
+  const shopName = document.getElementById('shop-name').innerText || 'Магазин';
+  document.getElementById('shop-reviews-topbar-title').innerText = 'Отзывы · ' + shopName;
+
+  // Загружаем отзывы
+  await loadShopReviewsScreen(currentShopId);
+}
+
+function closeShopReviewsScreen() {
+  document.getElementById('shop-reviews-screen').classList.remove('active');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeShopScreen);
+}
+
+async function loadShopReviewsScreen(shopId) {
+  const summaryEl = document.getElementById('shop-reviews-summary');
+  const ratingBigEl = document.getElementById('shop-reviews-summary-rating');
+  const starsBigEl = document.getElementById('shop-reviews-summary-stars');
+  const countEl = document.getElementById('shop-reviews-summary-count');
+  const feedEl = document.getElementById('shop-reviews-feed');
+  const emptyEl = document.getElementById('shop-reviews-empty');
+
+  feedEl.innerHTML = '';
+  emptyEl.style.display = 'none';
+  summaryEl.style.display = 'none';
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const { data: reviews, error } = await client
+      .from('reviews')
+      .select('*')
+      .eq('is_approved', true)
+      .contains('shop_ids', [shopId])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!reviews || reviews.length === 0) {
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    // Средний рейтинг
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const avg = (totalRating / reviews.length).toFixed(1);
+
+    ratingBigEl.innerText = avg;
+    starsBigEl.innerText = renderStars(Math.round(avg));
+    countEl.innerText = `${reviews.length} ${declOfNum(reviews.length, ['отзыв', 'отзыва', 'отзывов'])}`;
+    summaryEl.style.display = 'block';
+
+    // Подтягиваем названия товаров для плашек
+    const productIds = new Set();
+    reviews.forEach(r => {
+      if (r.product_id) productIds.add(r.product_id);
+    });
+
+    let productsMap = {};
+    if (productIds.size > 0) {
+      const { data: prods } = await client
+        .from('products')
+        .select('id, title')
+        .in('id', Array.from(productIds));
+
+      if (prods) {
+        prods.forEach(p => { productsMap[p.id] = p.title; });
+      }
+    }
+
+    // Рендерим отзывы
+    reviews.forEach(r => {
+      const date = new Date(r.created_at);
+      const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      // Плашка товара
+      let productTagHtml = '';
+      if (r.product_id && productsMap[r.product_id]) {
+        productTagHtml = `
+          <div class="review-product-tag" onclick="openProductByIdFromShopScreen(${r.product_id})">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <span>${escapeHtml(productsMap[r.product_id])}</span>
+          </div>
+        `;
+      }
+
+      // Фото
+      let photosHtml = '';
+      if (Array.isArray(r.photo_urls) && r.photo_urls.length > 0) {
+        const safeArr = r.photo_urls.map(u => `'${escapeHtml(u)}'`).join(',');
+        photosHtml = '<div class="review-card-photos" style="margin-top:10px;">' +
+          r.photo_urls.map((url, i) =>
+            `<img class="review-card-photo" src="${escapeHtml(url)}" onclick="openPhotoViewer([${safeArr}], ${i})">`
+          ).join('') +
+        '</div>';
+      }
+
+      feedEl.innerHTML += `
+        <div class="review-card">
+          <div class="review-card-header">
+            <div class="review-card-author">${escapeHtml(r.user_name || 'Покупатель')}</div>
+            <div class="review-card-date">${dateStr}</div>
+          </div>
+          <div class="review-card-stars">${renderStars(r.rating)}</div>
+          <div class="review-card-text">${escapeHtml(r.text || '')}</div>
+          ${photosHtml}
+          ${productTagHtml}
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error('Ошибка загрузки отзывов магазина:', err);
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = 'Не удалось загрузить отзывы';
+  }
+}
+
+// Переход к товару из плашки отзыва (сначала закрываем окно отзывов)
+async function openProductByIdFromShopScreen(productId) {
+  closeShopReviewsScreen();
+
+  // Небольшая задержка чтобы окно закрылось
+  setTimeout(async () => {
+    try {
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: product, error } = await client
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+
+      if (error) throw error;
+      if (!product) return;
+
+      // Добавляем в loadedProducts если ещё нет
+      const existingIndex = loadedProducts.findIndex(p => String(p.id) === String(productId));
+      if (existingIndex === -1) {
+        loadedProducts.push(product);
+        openProduct(loadedProducts.length - 1);
+      } else {
+        openProduct(existingIndex);
+      }
+    } catch (err) {
+      console.error('Ошибка открытия товара:', err);
+      tg.showAlert('Не удалось открыть товар');
+    }
+  }, 200);
+}
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
