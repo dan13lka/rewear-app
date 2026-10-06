@@ -328,6 +328,18 @@ body {
   padding: 16px; 
   padding-bottom: 90px; 
 }
+   /* ТЁМНАЯ ПЛАШКА НАД МОДАЛКОЙ (перекрывает каталог сверху) */
+.modal::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + var(--tg-safe-top, 0px));
+  background: var(--bg-main);
+  z-index: 99;
+  pointer-events: none;
+}
     
     .modal-close { 
       position: absolute; 
@@ -3528,7 +3540,12 @@ body {
 }
 .btn-theme-toggle:active { background: var(--bg-card-2); }
 .btn-theme-toggle svg { stroke: var(--text-tertiary); flex-shrink: 0; }
-  </style>
+ /* Когда модалка открыта — шапка поверх плашки */
+body.modal-open .header {
+  position: relative;
+  z-index: 200;
+}
+ </style>
 </head>
 <body>
 
@@ -5417,6 +5434,7 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   loadRelatedProducts(p);
      
   document.getElementById('product-modal').style.display = 'block';
+  document.body.classList.add('modal-open');
   tg.BackButton.show();
   tg.BackButton.onClick(closeProduct);
 }
@@ -5481,6 +5499,7 @@ function goToSlide(index) {
 
     function closeProduct() {
   document.getElementById('product-modal').style.display = 'none';
+  document.body.classList.remove('modal-open');
   tg.BackButton.hide();
   activeModalIndex = null;
   // Сброс галереи при закрытии
