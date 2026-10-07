@@ -3640,6 +3640,43 @@ body {
 .faq-warning-item .faq-title {
   color: var(--accent-red);
 }
+   /* БЕЙДЖИ СТАТУСА ЗАКАЗА */
+.order-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.order-status-badge.processing { background: rgba(255, 203, 71, 0.15); color: #ffcb47; }
+.order-status-badge.accepted   { background: rgba(255, 138, 76, 0.15); color: #ff8a4c; }
+.order-status-badge.delivering { background: rgba(109, 184, 255, 0.15); color: #6db8ff; }
+.order-status-badge.delivered  { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.order-status-badge.cancelled  { background: rgba(255, 107, 107, 0.15); color: #ff6b6b; }
+
+/* SELECT СТАТУСА В АДМИНКЕ */
+.order-status-select {
+  background: var(--bg-card-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238c8c8c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
  </style>
 </head>
 <body>
@@ -7010,6 +7047,15 @@ async function loadAdminOrders() {
               <div class="admin-order-buyer-username">${order.buyer_username ? '@' + escapeHtml(order.buyer_username) : '—'}</div>
             </div>
           </div>
+                <div class="admin-order-status-row">
+        <select class="order-status-select" onchange="changeOrderStatus(${order.id}, this.value)">
+          <option value="processing" ${order.status === 'processing' || !order.status ? 'selected' : ''}>В обработке</option>
+          <option value="accepted" ${order.status === 'accepted' ? 'selected' : ''}>Принят</option>
+          <option value="delivering" ${order.status === 'delivering' ? 'selected' : ''}>Доставляется</option>
+          <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
+          <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Отменён</option>
+        </select>
+      </div>
           <div class="admin-order-items">
             ${itemsHtml}
           </div>
@@ -9090,6 +9136,30 @@ function toggleFaqItem(id) {
     // Открываем
     item.classList.add('open');
     body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+   // === ИЗМЕНЕНИЕ СТАТУСА ЗАКАЗА ===
+async function changeOrderStatus(orderId, newStatus) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'order_update_status',
+        payload: { id: orderId, status: newStatus }
+      })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка');
+
+    showToast('Статус обновлён');
+
+  } catch (err) {
+    console.error('Ошибка смены статуса:', err);
+    tg.showAlert('Не удалось изменить статус: ' + err.message);
+    // Откатываем визуально — перезагружаем список
+    loadAdminOrders();
   }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
