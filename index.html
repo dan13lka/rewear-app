@@ -6220,11 +6220,17 @@ async function loadMyOrders() {
         `;
        });
       
+          // Определяем статус и его текст
+      const statusInfo = getOrderStatusInfo(order.status);
+
       listEl.innerHTML += `
         <div class="order-card">
           <div class="order-card-header">
-            <div class="order-card-id">Заказ #${order.id}</div>
-            <div class="order-card-date">${dateStr}</div>
+            <div>
+              <div class="order-card-id">Заказ #${order.id}</div>
+              <div class="order-card-date">${dateStr}</div>
+            </div>
+            <div class="order-status-badge ${statusInfo.key}">${statusInfo.label}</div>
           </div>
           <div class="order-items-list">
             ${itemsHtml}
@@ -9161,6 +9167,18 @@ async function changeOrderStatus(orderId, newStatus) {
     // Откатываем визуально — перезагружаем список
     loadAdminOrders();
   }
+}
+   // === ИНФО О СТАТУСЕ ЗАКАЗА ===
+function getOrderStatusInfo(status) {
+  const map = {
+    'processing': { key: 'processing', label: 'В обработке' },
+    'accepted':   { key: 'accepted',   label: 'Принят' },
+    'delivering': { key: 'delivering', label: 'Доставляется' },
+    'delivered':  { key: 'delivered',  label: 'Доставлен' },
+    'cancelled':  { key: 'cancelled',  label: 'Отменён' }
+  };
+  // Если статус пустой или незнакомый — показываем "В обработке"
+  return map[status] || { key: 'processing', label: 'В обработке' };
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
