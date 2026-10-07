@@ -3509,6 +3509,137 @@ body {
 }
 .btn-theme-toggle:active { background: var(--bg-card-2); }
 .btn-theme-toggle svg { stroke: var(--text-tertiary); flex-shrink: 0; }
+   /* FAQ АККОРДЕОН */
+.faq-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faq-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin: 16px 0 6px;
+}
+.faq-section-label:first-child {
+  margin-top: 0;
+}
+
+.faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-main);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.faq-item.open {
+  border-color: var(--border-hover);
+}
+
+.faq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.faq-header:active {
+  background: var(--bg-card-2);
+}
+
+.faq-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.faq-number {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
+.faq-arrow {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+}
+
+.faq-arrow svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-tertiary);
+  fill: none;
+}
+
+.faq-item.open .faq-arrow {
+  transform: rotate(180deg);
+}
+
+.faq-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.faq-body-inner {
+  padding: 0 16px 16px 16px;
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  border-top: 1px solid var(--border-main);
+  padding-top: 14px;
+}
+
+.faq-body-inner a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.faq-body-inner strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.faq-body-inner ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.faq-body-inner ol li {
+  margin-bottom: 4px;
+}
+
+.faq-warning-item .faq-header {
+  background: rgba(255, 107, 107, 0.06);
+}
+.faq-warning-item {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+.faq-warning-item .faq-title {
+  color: var(--accent-red);
+}
  </style>
 </head>
 <body>
@@ -3747,6 +3878,14 @@ body {
   </svg>
   <span>Мои заказы</span>
 </button>
+ <button class="btn-open-reviews" onclick="openFaqScreen()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+  </svg>
+  <span>FAQ · Частые вопросы</span>
+</button>
    <button class="btn-open-reviews" onclick="openReviewsScreen()">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -3921,6 +4060,21 @@ body {
       Перейти в каталог
     </button>
   </div>
+</div>
+ <!-- ЭКРАН FAQ -->
+<div id="faq-screen" class="reviews-screen">
+  <div class="reviews-topbar">
+    <button class="reviews-back-btn" onclick="closeFaqScreen()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <div class="reviews-topbar-title">Частые вопросы</div>
+    <div style="width: 22px;"></div>
+  </div>
+
+  <div class="faq-list" id="faq-list"></div>
 </div>
   <!-- ЭКРАН МАГАЗИНА -->
 <div id="shop-screen" class="reviews-screen">
@@ -8839,6 +8993,104 @@ async function openProductByIdFromShopScreen(productId) {
       tg.showAlert('Не удалось открыть товар');
     }
   }, 200);
+}
+   // === FAQ ===
+const FAQ_DATA = [
+  { section: 'Покупателям' },
+  { n: 1, q: 'Как сделать заказ?', a: '1. Открой каталог в приложении<br>2. Выбери товар и нужный размер<br>3. Нажми «В корзину»<br>4. Перейди в корзину → проверь товары<br>5. Если есть промокод — введи его в поле «Промокод»<br>6. Нажми «Купить» — откроется чат с нами для подтверждения' },
+  { n: 2, q: 'Как оплатить заказ?', a: 'Оплата <strong>напрямую</strong> нашему менеджеру — <strong>наличными при получении</strong> или <strong>переводом на карту</strong>. Реквизиты пришлём в чате после оформления заказа.' },
+  { n: 3, q: 'Сколько стоит доставка?', a: '<strong>Доставка по Ташкенту — бесплатная.</strong> Доставка в другие города — обсуждается индивидуально в чате.' },
+  { n: 4, q: 'Как быстро приедет заказ?', a: 'Срок доставки указан <strong>на карточке каждого товара</strong> (значок грузовичка, например «до 7 дней»).' },
+  { n: 5, q: 'Что если товар не подошёл по размеру?', a: 'Все размеры и замеры указаны в карточке товара. <strong>Перед оплатой уточни размер у менеджера</strong>, если есть сомнения.' },
+  { n: 6, q: 'Что если товар не понравился?', a: 'Мы продаём <strong>вещи из локальных магазинов</strong>, поэтому возврат возможен <strong>только если товар не соответствует описанию</strong> (не тот товар, брак, не тот цвет). Если просто «не понравился» — возврат невозможен.' },
+  { n: 7, q: 'Как связаться с вами?', a: 'Telegram: <a href="https://t.me/uz_rewear" target="_blank">@uz_rewear</a><br>Instagram: <a href="https://instagram.com/rewear__uz" target="_blank">@rewear__uz</a>' },
+  { n: 8, q: 'Как оставить отзыв?', a: 'Зайди в <strong>Профиль → Отзывы → Оставить отзыв</strong>. Отзыв появится после короткой проверки модератором.' },
+  { n: 9, q: 'Как отследить промокод?', a: 'Промокод активируется в корзине. Скидка <strong>сразу уменьшает итог</strong>. Один промокод = <strong>один раз на аккаунт</strong>.' },
+  { n: 10, q: 'Что делать, если товар «ПРОДАНО»?', a: 'Значит его уже купили. Посмотри <strong>похожие товары</strong> — в карточке внизу есть блок «Рекомендуем также».' },
+  { section: 'Продавцам' },
+  { n: 11, q: 'Как разместить товары?', a: 'Свяжись с нами в Telegram <a href="https://t.me/uz_rewear" target="_blank">@uz_rewear</a>. Пришли фото, размеры, цену и описание. Мы всё загрузим сами.' },
+  { n: 12, q: 'Сколько стоит размещение?', a: '<strong>Размещение бесплатное.</strong> Мы берём <strong>только % с продаж</strong>. Нет продажи — нет комиссии.' },
+  { n: 13, q: 'Кто отвечает за доставку?', a: 'Все заказы <strong>мы забираем у вас сами</strong> и <strong>везём покупателю</strong>. Вы просто отдаёте товар нашему курьеру.' },
+  { n: 14, q: 'Как я получу деньги?', a: 'После успешной продажи мы переводим вам сумму <strong>в течение 3 дней</strong>, за вычетом комиссии. Способ перевода обсуждается индивидуально.' },
+  { n: 15, q: 'Какой процент комиссии?', a: '<strong>Всю таблицу комиссии менеджер скидывает в момент переговоров.</strong>' },
+  { section: '⚠️ Важные правила', warning: true },
+  { n: 1, q: 'Мы — платформа, а не магазин', a: 'Мы продаём вещи от локальных магазинов, а не свои собственные.' },
+  { n: 2, q: 'Оплата только менеджеру RE:WEAR', a: '<strong>Не переводи деньги третьим лицам, только менеджеру.</strong>' },
+  { n: 3, q: 'Возврат — только если товар бракованный', a: 'Если товар пришёл в порядке и соответствует описанию — возврат невозможен.' },
+  { n: 4, q: 'Один промокод = один раз на аккаунт', a: 'Промокод нельзя использовать повторно с одного аккаунта.' }
+];
+
+function openFaqScreen() {
+  document.getElementById('faq-screen').classList.add('active');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeFaqScreen);
+  renderFaqList();
+}
+
+function closeFaqScreen() {
+  document.getElementById('faq-screen').classList.remove('active');
+  tg.BackButton.hide();
+}
+
+function renderFaqList() {
+  const listEl = document.getElementById('faq-list');
+  listEl.innerHTML = '';
+
+  FAQ_DATA.forEach((item, index) => {
+    // Секция (заголовок)
+    if (item.section) {
+      const labelClass = item.warning ? 'faq-section-label' : 'faq-section-label';
+      listEl.innerHTML += `<div class="${labelClass}">${item.section}</div>`;
+      return;
+    }
+
+    // Пункт
+    const itemClass = item.warning ? 'faq-item faq-warning-item' : 'faq-item';
+    listEl.innerHTML += `
+      <div class="${itemClass}" data-faq-id="faq-${index}">
+        <div class="faq-header" onclick="toggleFaqItem('faq-${index}')">
+          <div class="faq-title">
+            <span class="faq-number">${item.n}.</span>
+            <span>${item.q}</span>
+          </div>
+          <div class="faq-arrow">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="faq-body">
+          <div class="faq-body-inner">${item.a}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function toggleFaqItem(id) {
+  const item = document.querySelector(`[data-faq-id="${id}"]`);
+  if (!item) return;
+
+  const body = item.querySelector('.faq-body');
+  const isOpen = item.classList.contains('open');
+
+  // Закрываем все остальные
+  document.querySelectorAll('.faq-item.open').forEach(el => {
+    if (el !== item) {
+      el.classList.remove('open');
+      el.querySelector('.faq-body').style.maxHeight = null;
+    }
+  });
+
+  if (isOpen) {
+    // Закрываем текущий
+    item.classList.remove('open');
+    body.style.maxHeight = null;
+  } else {
+    // Открываем
+    item.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
 }
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
