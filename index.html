@@ -5833,7 +5833,7 @@ async function handleProductReviewPhotoUpload(event) {
     }
 
     try {
-      const blob = await compressImage(filesToProcess[i], 1080, 0.85);
+      const blob = await compressImage(filesToProcess[i], 800, 0.75);
       const url = await uploadViaServer('review-images', blob, 'jpg', 'image/jpeg');
       productReviewPhotos.push(url);
     } catch (err) {
@@ -5877,7 +5877,7 @@ async function handleReviewPhotoUpload(event) {
     }
 
     try {
-      const blob = await compressImage(filesToProcess[i], 1080, 0.85);
+     const blob = await compressImage(filesToProcess[i], 800, 0.75);
       const url = await uploadViaServer('review-images', blob, 'jpg', 'image/jpeg');
       reviewPhotos.push(url);
     } catch (err) {
@@ -8324,7 +8324,7 @@ async function uploadViaServer(bucket, blob, ext, contentType) {
 }
 
 async function uploadPhotoToSupabase(file) {
-  const compressedBlob = await compressImage(file, 1080, 0.85);
+  const compressedBlob = await compressImage(file, 800, 0.75);
   return await uploadViaServer('product-images', compressedBlob, 'jpg', 'image/jpeg');
 }
 
