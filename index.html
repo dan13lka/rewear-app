@@ -8600,7 +8600,7 @@ let productReviewRating = 0;
   blockEl.style.display = 'block';
   trackEl.innerHTML = '';
 
-  // Рисуем 4 скелетона (можно и больше — под ширину экрана)
+  // Рисуем 4 скелетона
   for (let i = 0; i < 4; i++) {
     trackEl.innerHTML += `
       <div class="modal-related-skeleton">
@@ -8615,56 +8615,58 @@ let productReviewRating = 0;
   }
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ===== 1. Собираем рекомендации из УЖЕ ЗАГРУЖЕННЫХ товаров =====
+    let related = loadedProducts.filter(p =>
+      String(p.id) !== String(product.id)
+    );
 
-    // 1. Товары той же категории
-    let related = [];
-    if (product.category) {
-      const { data } = await client
-        .from('products')
-        .select('*')
-        .neq('id', product.id)
-        .ilike('category', product.category)
-        .limit(12);
-      related = data || [];
-    }
+    // Товары той же категории
+    const categoryRelated = related.filter(p =>
+      product.category &&
+      p.category &&
+      String(p.category).toLowerCase() === String(product.category).toLowerCase()
+    );
 
-    // 2. Добираем товарами того же магазина
-    if (related.length < 4 && product.shop_id) {
-      const { data } = await client
-        .from('products')
-        .select('*')
-        .neq('id', product.id)
-        .eq('shop_id', product.shop_id)
-        .limit(12);
+    // Товары того же магазина
+    const shopRelated = related.filter(p =>
+      product.shop_id &&
+      p.shop_id &&
+      String(p.shop_id) === String(product.shop_id)
+    );
 
-      if (data) {
-        const existingIds = new Set(related.map(p => p.id));
-        data.forEach(p => {
-          if (!existingIds.has(p.id)) related.push(p);
-        });
+    // Объединяем без дублей (категория → магазин → остальные)
+    const relatedMap = new Map();
+    [...categoryRelated, ...shopRelated, ...related].forEach(p => {
+      if (!relatedMap.has(String(p.id))) {
+        relatedMap.set(String(p.id), p);
       }
-    }
+    });
+    related = Array.from(relatedMap.values())
+      .filter(p => String(p.id) !== String(product.id))
+      .slice(0, 12);
 
-    // 3. Добираем любыми из каталога
+    // ===== 2. Если мало — ОДИН доп запрос (не три!) =====
     if (related.length < 4) {
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const { data } = await client
         .from('products')
-        .select('*')
+        .select('id, title, price, category, shop_id, image_urls, in_stock')
         .neq('id', product.id)
         .limit(12);
 
       if (data) {
-        const existingIds = new Set(related.map(p => p.id));
+        const existingIds = new Set(related.map(p => String(p.id)));
         data.forEach(p => {
-          if (!existingIds.has(p.id)) related.push(p);
+          if (!existingIds.has(String(p.id))) {
+            related.push(p);
+          }
         });
       }
     }
 
     related = related.slice(0, 12);
 
-    // Если ничего не нашли — просто скрываем блок
+    // Если совсем ничего нет — прячем блок
     if (related.length === 0) {
       blockEl.style.display = 'none';
       return;
@@ -8673,7 +8675,7 @@ let productReviewRating = 0;
     // Очищаем скелетоны и рисуем карточки
     trackEl.innerHTML = '';
 
-       related.forEach(p => {
+    related.forEach(p => {
       let imgUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400';
       if (p.image_urls) {
         const arr = Array.isArray(p.image_urls) ? p.image_urls : [p.image_urls];
@@ -8693,7 +8695,7 @@ let productReviewRating = 0;
       trackEl.innerHTML += `
         <div class="${cardClass}" onclick="openRelatedProduct(${p.id})">
           <div class="modal-related-img-wrap">
-            <img class="modal-related-img" src="${imgUrl}" alt="${escapeHtml(p.title || '')}">
+            <img class="modal-related-img" src="${imgUrl}" alt="${escapeHtml(p.title || '')}" loading="lazy" decoding="async">
             ${soldOverlay}
             <div class="modal-related-fav" onclick="event.stopPropagation(); toggleFavFromRelated(event, '${p.id}')">
               <svg viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#ffffff'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8703,7 +8705,7 @@ let productReviewRating = 0;
           </div>
           <div class="modal-related-info">
             ${ratingHtml}
-            <div class="modal-related-price">${Number(p.price || 0).toLocaleString('ru-RU')} so'm</div>
+            <div class="modal-related-price">${Number(p.price || 0).toLocaleString('ru-RU')} сум</div>
             <div class="modal-related-name">${escapeHtml(p.title || 'Без названия')}</div>
           </div>
         </div>
@@ -8712,7 +8714,6 @@ let productReviewRating = 0;
 
   } catch (err) {
     console.error('Ошибка загрузки рекомендаций:', err);
-    // При ошибке прячем блок
     blockEl.style.display = 'none';
   }
 }
@@ -8721,7 +8722,6 @@ async function openRelatedProduct(productId) {
   const index = loadedProducts.findIndex(p => String(p.id) === String(productId));
   if (index !== -1) {
     openProduct(index);
-    // Скролл модалки наверх, чтобы не остались внизу
     document.getElementById('product-modal').scrollTop = 0;
     return;
   }
@@ -8730,7 +8730,7 @@ async function openRelatedProduct(productId) {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const { data: product, error } = await client
       .from('products')
-      .select('*')
+      .select('id, title, price, category, gender, shop_id, sizes, image_urls, description, in_stock, delivery_days')
       .eq('id', productId)
       .single();
 
@@ -8745,7 +8745,6 @@ async function openRelatedProduct(productId) {
     tg.showAlert('Не удалось открыть товар');
   }
 }
-
 // Переключение избранного из рекомендаций
 function toggleFavFromRelated(e, id) {
   if (e) {
