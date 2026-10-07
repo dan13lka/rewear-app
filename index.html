@@ -4809,34 +4809,23 @@ async function enrichProductsWithShopNames() {
 async function loadProductRatings() {
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data: reviews, error } = await client
-      .from('reviews')
-      .select('product_id, rating')
-      .eq('is_approved', true)
-      .not('product_id', 'is', null);
+    const { data, error } = await client
+      .from('product_ratings')
+      .select('product_id, rating_avg, rating_count');
 
     if (error) throw error;
 
     productRatings = {};
-    if (!reviews) return;
-
-    const agg = {};
-    reviews.forEach(r => {
-      const pid = r.product_id;
-      if (!agg[pid]) agg[pid] = { sum: 0, count: 0 };
-      agg[pid].sum += Number(r.rating || 0);
-      agg[pid].count += 1;
-    });
-
-    Object.keys(agg).forEach(pid => {
-      const { sum, count } = agg[pid];
-      productRatings[pid] = {
-        avg: (sum / count).toFixed(1),
-        count: count
+    (data || []).forEach(r => {
+      productRatings[String(r.product_id)] = {
+        avg: Number(r.rating_avg || 0).toFixed(1),
+        count: Number(r.rating_count || 0)
       };
     });
   } catch (err) {
     console.error('Ошибка загрузки оценок:', err);
+    // Не ломаем приложение, если таблица ещё не создана
+    productRatings = {};
   }
 }
     function toggleFilterPanel() {
@@ -8544,15 +8533,25 @@ async function loadProductReviews(productId) {
       return;
     }
 
-    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-    const avg = (totalRating / reviews.length).toFixed(1);
+       // Берём готовый рейтинг из productRatings (загружен из product_ratings)
+    const ratingData = productRatings[String(productId)] || null;
 
-    ratingEl.innerHTML = `
-      <span>${renderStars(Math.round(avg))}</span>
-      <span>${avg}</span>
-      <span class="count">· ${reviews.length}</span>
-    `;
-
+    if (ratingData && ratingData.count > 0) {
+      ratingEl.innerHTML = `
+        <span>${renderStars(Math.round(Number(ratingData.avg)))}</span>
+        <span>${ratingData.avg}</span>
+        <span class="count">· ${ratingData.count}</span>
+      `;
+    } else {
+      // Если в product_ratings ещё нет записи — считаем по загруженным (fallback)
+      const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+      const avg = (totalRating / reviews.length).toFixed(1);
+      ratingEl.innerHTML = `
+        <span>${renderStars(Math.round(avg))}</span>
+        <span>${avg}</span>
+        <span class="count">· ${reviews.length}</span>
+      `;
+    }
     reviews.forEach(r => {
       const date = new Date(r.created_at);
       const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
