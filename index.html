@@ -4583,16 +4583,6 @@ body {
   </button>
   <div id="review-photos-preview" class="review-photos-preview"></div>
 </div>
- <!-- ЭКРАН УСПЕШНОГО ЗАКАЗА -->
-<div id="order-success" class="order-success-overlay">
-  <div class="order-success-icon">
-    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-  </div>
-  <div class="order-success-title">Заказ оформлен</div>
-  <div class="order-success-text">Ожидайте, с вами свяжется менеджер для уточнения деталей.</div>
-  <div class="order-success-note">(Убедитесь в настройках, что вам можно писать в личные сообщения)</div>
-  <button class="order-success-btn" onclick="closeOrderSuccess()">Понятно</button>
-</div>
   <!-- Выбор магазинов (показывается только если клиент покупал) -->
   <div id="review-shops-block" style="display: none;">
     <div class="review-form-label">Отметить магазины (необязательно):</div>
@@ -9238,7 +9228,18 @@ function getOrderStatusInfo(status) {
   // Если статус пустой или незнакомый — показываем "В обработке"
   return map[status] || { key: 'processing', label: 'В обработке' };
 }
+   
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
+ <!-- ЭКРАН УСПЕШНОГО ЗАКАЗА -->
+<div id="order-success" class="order-success-overlay">
+  <div class="order-success-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  </div>
+  <div class="order-success-title">Заказ оформлен</div>
+  <div class="order-success-text">Ожидайте, с вами свяжется менеджер для уточнения деталей.</div>
+  <div class="order-success-note">(Убедитесь в настройках, что вам можно писать в личные сообщения)</div>
+  <button class="order-success-btn" onclick="closeOrderSuccess()">Понятно</button>
+</div>
 </body>
 </html>
