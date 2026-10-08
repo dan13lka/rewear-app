@@ -1589,6 +1589,80 @@ body {
   letter-spacing: 0.5px;
 }
 
+   /* ЭКРАН УСПЕШНОГО ЗАКАЗА */
+.order-success-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-main);
+  z-index: 3000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.order-success-overlay.show { display: flex; }
+
+.order-success-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.12);
+  border: 2px solid #4ade80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  animation: successPop 0.4s ease-out;
+}
+.order-success-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: #4ade80;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@keyframes successPop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.order-success-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.order-success-text {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 320px;
+  margin-bottom: 16px;
+}
+.order-success-note {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  max-width: 320px;
+  margin-bottom: 28px;
+}
+.order-success-btn {
+  width: 100%;
+  max-width: 320px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.order-success-btn:active { opacity: 0.85; }
+
 .btn-checkout.disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -5327,41 +5401,51 @@ function toggleFav(e, id) {
     }
   }
 }
-  async function checkoutCart() {
-  // Проверка что корзина не пуста
-  const validItems = cart.filter(item => {
-    return loadedProducts.some(p => String(p.id) === item.id);
-  });
+ // ЭКРАН УСПЕШНОГО ЗАКАЗА
+function showOrderSuccess() {
+  document.getElementById('order-success').classList.add('show');
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeOrderSuccess);
+}
 
+function closeOrderSuccess() {
+  document.getElementById('order-success').classList.remove('show');
+  tg.BackButton.hide();
+  switchTab('home');
+}
+
+let checkoutInProgress = false;
+
+async function checkoutCart() {
+  if (checkoutInProgress) return;
+
+  const validItems = cart.filter(item => loadedProducts.some(p => String(p.id) === item.id));
   if (validItems.length === 0) return;
 
-  // Проверка: есть ли товары не в наличии
-  const outOfStock = validItems.filter(item => {
+  const hasSold = validItems.some(item => {
     const p = loadedProducts.find(prod => String(prod.id) === item.id);
     return p && p.in_stock === false;
   });
-
-  if (outOfStock.length > 0) {
+  if (hasSold) {
     tg.showAlert('Уберите из корзины товары, которых нет в наличии');
     return;
   }
 
-  // Формируем список товаров с учётом количества
+  checkoutInProgress = true;
+  const btn = document.querySelector('#cart-checkout-bar .btn-checkout');
+  if (btn) {
+    btn.classList.add('disabled');
+    btn.innerText = 'Оформляем...';
+  }
+
   let total = 0;
   const itemsForOrder = [];
-
   validItems.forEach(item => {
     const p = loadedProducts.find(prod => String(prod.id) === item.id);
     if (!p) return;
-
     const qty = item.qty || 1;
     const price = Number(p.price || 0);
-    const lineSum = price * qty;
-
-    total += lineSum;
-
-    // Добавляем каждую единицу как отдельный item (если qty > 1)
-    // ИЛИ как один item с полем qty — оставим как один item с qty
+    total += price * qty;
     itemsForOrder.push({
       id: p.id,
       title: p.title || 'Без названия',
@@ -5377,7 +5461,6 @@ function toggleFav(e, id) {
   const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
   const buyerUsername = user.username || '';
 
-  // Учитываем скидку
   let finalTotal = total;
   let promoCode = null;
   let promoDiscount = 0;
@@ -5387,36 +5470,34 @@ function toggleFav(e, id) {
     promoCode = appliedPromo.code;
   }
 
-  // 1. Сохраняем заказ в Supabase
+  // 1. Сохраняем заказ со статусом "В обработке"
   let orderId = null;
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const { data, error } = await client.from('orders').insert({
       buyer_tg_id: user.id || null,
       buyer_username: buyerUsername,
       buyer_name: buyerName,
       items: itemsForOrder,
       total_sum: finalTotal,
-      status: 'new',
+      status: 'processing',
       notes: promoCode ? `Промокод: ${promoCode} (-${promoDiscount.toLocaleString('ru-RU')} сум)` : null
     }).select().single();
-
     if (error) throw error;
     orderId = data.id;
   } catch (err) {
     console.error('Ошибка сохранения заказа:', err);
+    checkoutInProgress = false;
+    renderCart();
     tg.showAlert('Не удалось сохранить заказ. Попробуйте ещё раз.');
     return;
   }
 
-  // 2. Отправляем уведомление
+  // 2. Уведомление в бота
   try {
-    await fetch('https://lseatoyffptmjljinswp.supabase.co/functions/v1/notify-order', {
+    await fetch(SUPABASE_URL + '/functions/v1/notify-order', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: orderId,
         buyer_name: buyerName,
@@ -5431,51 +5512,22 @@ function toggleFav(e, id) {
     console.error('Ошибка отправки уведомления:', err);
   }
 
-  // 3. Формируем сообщение
-  let message = `Здравствуйте! Оформил заказ #${orderId} в RE:WEAR:\n\n`;
-  itemsForOrder.forEach((item, idx) => {
-    const shopInfo = item.shop ? ` [Шоп: ${item.shop}]` : '';
-    const sizeStr = item.size ? ` (Размер: ${item.size})` : '';
-    const qtyStr = item.qty > 1 ? ` × ${item.qty}` : '';
-    const lineSum = item.price * item.qty;
-    message += `${idx + 1}. ${item.title}${sizeStr}${qtyStr}${shopInfo} — ${lineSum.toLocaleString('ru-RU')} сум\n`;
-  });
-  if (promoCode) {
-    message += `\nПромокод ${promoCode}: -${promoDiscount.toLocaleString('ru-RU')} сум`;
-  }
-  message += `\nИтого: ${finalTotal.toLocaleString('ru-RU')} сум`;
-
-  const targetUrl = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(message)}`;
-
-  // 4. Записываем использование промокода
+  // 3. Записываем использование промокода
   if (appliedPromo && user.id) {
     try {
       const clientPromo = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
       await clientPromo.from('promo_uses').insert({
         promo_code: appliedPromo.code,
         user_tg_id: user.id
       });
-
-      const { data: promoData } = await clientPromo
-        .from('promo_codes')
-        .select('used_count')
-        .eq('code', appliedPromo.code)
-        .single();
-
-      if (promoData) {
-        await clientPromo
-          .from('promo_codes')
-          .update({ used_count: (promoData.used_count || 0) + 1 })
-          .eq('code', appliedPromo.code);
-      }
     } catch (err) {
       console.error('Ошибка записи использования промокода:', err);
     }
   }
 
-  // 5. Чистим корзину
+  // 4. Чистим корзину и показываем экран успеха
   cart = [];
+  cartSizes = {};
   appliedPromo = null;
 
   const promoInputW = document.getElementById('promo-input-wrapper');
@@ -5486,15 +5538,11 @@ function toggleFav(e, id) {
   if (promoInput) promoInput.value = '';
 
   saveState();
+  checkoutInProgress = false;
   renderCart();
-
-  if (tg && tg.openTelegramLink) {
-    tg.openTelegramLink(targetUrl);
-  } else {
-    window.open(targetUrl, '_blank');
-  }
+  refreshCatalog();
+  showOrderSuccess();
 }
-
    function openProduct(index) {
   activeModalIndex = index;
   const p = loadedProducts[index];
@@ -9180,6 +9228,16 @@ function getOrderStatusInfo(status) {
   // Если статус пустой или незнакомый — показываем "В обработке"
   return map[status] || { key: 'processing', label: 'В обработке' };
 }
+   <!-- ЭКРАН УСПЕШНОГО ЗАКАЗА -->
+<div id="order-success" class="order-success-overlay">
+  <div class="order-success-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  </div>
+  <div class="order-success-title">Заказ оформлен</div>
+  <div class="order-success-text">Ожидайте, с вами свяжется менеджер для уточнения деталей.</div>
+  <div class="order-success-note">(Убедитесь в настройках, что вам можно писать в личные сообщения)</div>
+  <button class="order-success-btn" onclick="closeOrderSuccess()">Понятно</button>
+</div>
     window.addEventListener('DOMContentLoaded', initAndLoad);
   </script>
 </body>
