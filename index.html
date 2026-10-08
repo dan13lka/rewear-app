@@ -6545,7 +6545,7 @@ async function loadBanners() {
     <div class="banner-slide gradient-blue" onclick="openFaqScreen()">
       <div class="banner-icon">${FAQ_BANNER_ICON}</div>
       <div class="banner-content">
-        <div class="banner-title">Частые вопросы</div>
+         <div class="banner-title">Перед заказом обязательно ознакомься с условиями</div>
         <div class="banner-faq-text">Заказ, оплата, доставка и возврат. Ответы в один тап.</div>
         <div class="banner-faq-cta">Открыть FAQ →</div>
       </div>
@@ -7022,31 +7022,68 @@ async function adminCall(action, payload = {}) {
   if (!res.ok || !json.ok) throw new Error(json.error || 'Ошибка сервера');
   return json.data;
 }
-   async function trackEvent(type, productId) {
-  try {
-    // Для просмотров троттлинг на клиенте — не чаще 1 раза в 30 минут
-    if (type === 'view' && productId) {
-      const key = `viewed_${productId}`;
-      const last = Number(localStorage.getItem(key) || 0);
-      const now = Date.now();
-      if (now - last < 30 * 60 * 1000) return;
-      localStorage.setItem(key, String(now));
-    }
+ // === АНАЛИТИКА С БАТЧИНГОМ (30 сек) ===
+let eventQueue = [];
+let eventFlushTimer = null;
+const VIEW_THROTTLE_MS = 30 * 60 * 1000;
 
+function trackEvent(type, productId) {
+  // Просмотры: не чаще раза в 30 минут на товар
+  if (type === 'view' && productId) {
+    const key = `viewed_${productId}`;
+    const last = Number(localStorage.getItem(key) || 0);
+    const now = Date.now();
+    if (now - last < VIEW_THROTTLE_MS) return;
+    localStorage.setItem(key, String(now));
+  }
+
+  eventQueue.push({ type, product_id: productId, ts: Date.now() });
+
+  if (!eventFlushTimer) {
+    eventFlushTimer = setTimeout(flushEvents, 30000);
+  }
+}
+
+async function flushEvents() {
+  clearTimeout(eventFlushTimer);
+  eventFlushTimer = null;
+  if (eventQueue.length === 0) return;
+
+  const batch = eventQueue;
+  eventQueue = [];
+
+  const body = JSON.stringify({
+    initData: tg.initData,
+    action: 'track_events_batch',
+    payload: { events: batch }
+  });
+
+  // sendBeacon — надёжнее при сворачивании приложения
+  try {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      const ok = navigator.sendBeacon(SUPABASE_URL + '/functions/v1/admin', blob);
+      if (ok) return;
+    }
+  } catch (_) {}
+
+  try {
     await fetch(SUPABASE_URL + '/functions/v1/admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        initData: tg.initData,
-        action: 'track_event',
-        payload: { type, product_id: productId }
-      })
+      body,
+      keepalive: true
     });
   } catch (err) {
-    // не мешаем UX, если аналитика не сработала
-    console.warn('trackEvent failed:', err);
+    console.warn('flushEvents failed:', err);
   }
 }
+
+// Отправляем остаток при уходе из приложения
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushEvents();
+});
+window.addEventListener('pagehide', flushEvents);
 // Перезагружает каталог после изменений в админке
 async function refreshCatalog() {
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
