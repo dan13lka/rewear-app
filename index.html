@@ -7052,33 +7052,25 @@ async function flushEvents() {
   const batch = eventQueue;
   eventQueue = [];
 
-  const body = JSON.stringify({
-    initData: tg.initData,
-    action: 'track_events_batch',
-    payload: { events: batch }
-  });
-
-  // sendBeacon — надёжнее при сворачивании приложения
   try {
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: 'application/json' });
-      const ok = navigator.sendBeacon(SUPABASE_URL + '/functions/v1/admin', blob);
-      if (ok) return;
-    }
-  } catch (_) {}
-
-  try {
-    await fetch(SUPABASE_URL + '/functions/v1/admin', {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body,
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'track_events_batch',
+        payload: { events: batch }
+      }),
       keepalive: true
     });
+    const json = await res.json();
+    console.log('flushEvents result:', json);
   } catch (err) {
-    console.warn('flushEvents failed:', err);
+    console.error('flushEvents failed:', err);
+    // Если упало — вернём события обратно в очередь, чтобы не потерять
+    eventQueue.unshift(...batch);
   }
 }
-
 // Отправляем остаток при уходе из приложения
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') flushEvents();
