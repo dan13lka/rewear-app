@@ -4594,6 +4594,14 @@ body {
     <input type="number" id="promo-f-max-uses" class="form-input" placeholder="100">
   </div>
 
+   <div class="form-group">
+    <label class="form-label">Только на первый заказ</label>
+    <select id="promo-f-first-only" class="form-select">
+      <option value="false">Нет — работает всем</option>
+      <option value="true">Да — только новым клиентам</option>
+    </select>
+  </div>
+ 
   <div class="form-group">
     <label class="form-label">Статус</label>
     <select id="promo-f-active" class="form-select">
@@ -6408,7 +6416,7 @@ async function applyPromo() {
       return;
     }
 
-    // 4. Проверка: не использовал ли этот юзер
+      // 4. Проверка: не использовал ли этот юзер
     const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
     if (user.id) {
       const { data: uses, error: useError } = await client
@@ -6423,6 +6431,22 @@ async function applyPromo() {
       if (uses && uses.length > 0) {
         showPromoError('Вы уже использовали этот промокод');
         return;
+      }
+
+      // 4.1. Если промокод только для новых — проверяем что у юзера нет заказов
+      if (promo.first_order_only === true) {
+        const { data: orders, error: ordersErr } = await client
+          .from('orders')
+          .select('id')
+          .eq('buyer_tg_id', user.id)
+          .limit(1);
+
+        if (ordersErr) throw ordersErr;
+
+        if (orders && orders.length > 0) {
+          showPromoError('Этот промокод доступен только для первого заказа');
+          return;
+        }
       }
     }
 
@@ -7398,9 +7422,10 @@ async function loadAdminPromo() {
             </div>
             <div class="admin-promo-status ${statusClass}">${statusText}</div>
           </div>
-          <div class="admin-promo-info">
+            <div class="admin-promo-info">
             <div class="admin-promo-info-row">Мин. заказ: <strong>${minSum} сум</strong></div>
             <div class="admin-promo-info-row">Использован: <strong>${usedCount} / ${maxUses}</strong></div>
+            ${p.first_order_only ? '<div class="admin-promo-info-row" style="color:#ffb800;">🎁 Только для первого заказа</div>' : ''}
           </div>
           <div class="admin-promo-actions">
             <button class="btn-toggle" onclick="togglePromoStatus(${p.id})">${toggleBtnText}</button>
@@ -7624,7 +7649,7 @@ function openPromoForm() {
   document.getElementById('promo-f-min').value = '150000';
   document.getElementById('promo-f-max-uses').value = '';
   document.getElementById('promo-f-active').value = 'true';
-
+  document.getElementById('promo-f-first-only').value = 'false';
   document.getElementById('promo-form-modal').style.display = 'block';
   tg.BackButton.show();
   tg.BackButton.onClick(closePromoForm);
@@ -7642,7 +7667,8 @@ async function savePromo() {
   const minSum = Number(document.getElementById('promo-f-min').value.trim()) || 0;
   const maxUsesStr = document.getElementById('promo-f-max-uses').value.trim();
   const maxUses = maxUsesStr ? Number(maxUsesStr) : null;
-  const isActive = document.getElementById('promo-f-active').value === 'true';
+   const isActive = document.getElementById('promo-f-active').value === 'true';
+  const firstOrderOnly = document.getElementById('promo-f-first-only').value === 'true';
 
   if (!code) {
     tg.showAlert('Введите код промокода');
@@ -7655,12 +7681,13 @@ async function savePromo() {
 
   try {
     await adminCall('promo_save', {
-      data: {
+           data: {
         code: code,
         discount_amount: discount,
         min_order_sum: minSum,
         max_uses: maxUses,
-        is_active: isActive
+        is_active: isActive,
+        first_order_only: firstOrderOnly
       }
     });
 
