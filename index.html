@@ -798,6 +798,40 @@ body {
   gap: 8px;
   flex-wrap: wrap;
 }
+   /* ВЫБОР ЦВЕТА */
+.color-section {
+  margin-bottom: 16px;
+}
+.color-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.color-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.color-chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  padding: 0;
+}
+.color-chip:active {
+  transform: scale(0.9);
+}
+.color-chip.selected {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-main), 0 0 0 4px var(--text-primary);
+}
 .size-chip {
   background: var(--bg-card-2);
   border: 1px solid var(--border-strong);
@@ -4163,6 +4197,10 @@ body {
   <div class="size-label">Выберите размер:</div>
   <div class="size-options" id="m-size-options"></div>
 </div>
+   <div class="color-section" id="m-color-section" style="display: none;">
+  <div class="color-label">Выберите цвет:</div>
+  <div class="color-options" id="m-color-options"></div>
+</div>
 
 <div id="m-out-of-stock" class="out-of-stock-message" style="display: none;">
   Нет в наличии
@@ -4470,6 +4508,10 @@ body {
   <div class="form-group">
     <label class="form-label">Размеры (через запятую)</label>
     <input type="text" id="pf-sizes" class="form-input" placeholder="S, M, L, XL">
+  </div>
+   <div class="form-group">
+    <label class="form-label">Цвета (через запятую)</label>
+    <input type="text" id="pf-colors" class="form-input" placeholder="Чёрный, Белый, Бежевый">
   </div>
 
     <div class="form-group">
@@ -5255,12 +5297,27 @@ function toggleFav(e, id) {
     return;
   }
 
-  // Итоговый размер: выбранный ИЛИ единственный ИЛИ '' (пустой)
+  // То же для цветов
+  let cleanColors = [];
+  if (Array.isArray(p.colors)) {
+    cleanColors = p.colors.map(c => String(c).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+  } else if (typeof p.colors === 'string' && p.colors.trim()) {
+    cleanColors = p.colors.replace(/[\{\}\"\']/g, '').split(',').map(c => c.trim()).filter(Boolean);
+  }
+
+  if (cleanColors.length > 1 && !selectedColor) {
+    tg.showAlert('Пожалуйста, выберите цвет');
+    return;
+  }
+
+  // Итоговый размер и цвет
   const finalSize = selectedSize || (cleanSizes[0] || '');
+  const finalColor = selectedColor || (cleanColors[0] || '');
 
   // Ищем в корзине строку с этим товаром + размером
-  const existingIndex = cart.findIndex(item => item.id === strId && item.size === finalSize);
-
+   const existingIndex = cart.findIndex(item =>
+    item.id === strId && item.size === finalSize && (item.color || '') === finalColor
+  );
   if (existingIndex !== -1) {
     // Уже есть — увеличиваем количество (макс 10)
     if (cart[existingIndex].qty < 10) {
@@ -5271,9 +5328,10 @@ function toggleFav(e, id) {
     }
   } else {
     // Нет — добавляем новую строку
-    cart.push({
+       cart.push({
       id: strId,
       size: finalSize,
+      color: finalColor,
       qty: 1
     });
   }
@@ -5295,12 +5353,17 @@ function toggleFav(e, id) {
   }
 }
 
-  function removeFromCart(id, size) {
+  function removeFromCart(id, size, color) {
   const strId = String(id);
   const strSize = String(size || '');
+  const strColor = String(color || '');
 
-  // Удаляем строку с этим товаром И этим размером
-  cart = cart.filter(item => !(item.id === strId && item.size === strSize));
+  // Удаляем строку с этим товаром, размером И цветом
+  cart = cart.filter(item => !(
+    item.id === strId &&
+    item.size === strSize &&
+    (item.color || '') === strColor
+  ));
 
   // Считаем итог корзины для проверки промокода
   let cartTotal = 0;
@@ -5419,7 +5482,8 @@ function toggleFav(e, id) {
 
     let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
 
-    const sizeHtml = item.size ? `<div class="cart-item-size">Размер: ${escapeHtml(item.size)}</div>` : '';
+       const sizeHtml = item.size ? `<div class="cart-item-size">Размер: ${escapeHtml(item.size)}</div>` : '';
+    const colorHtml = item.color ? `<div class="cart-item-size">Цвет: ${escapeHtml(item.color)}</div>` : '';
 
     const isOutOfStock = product.in_stock === false;
     if (isOutOfStock) hasOutOfStock = true;
@@ -5431,17 +5495,17 @@ function toggleFav(e, id) {
       <div class="${itemClass}">
         <img class="cart-item-img" loading="lazy" decoding="async" src="${imageUrl}" alt="${product.title}">
         <div class="cart-item-info">
-          <div class="cart-item-title">${escapeHtml(product.title || 'Без названия')}</div>
+                  <div class="cart-item-title">${escapeHtml(product.title || 'Без названия')}</div>
           ${sizeHtml}
+          ${colorHtml}
           ${outBadge}
           <div class="cart-item-price">${price.toLocaleString('ru-RU')} сум</div>
           <div class="cart-item-qty">
-            <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', -1)">−</button>
+           <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', '${item.color || ''}', -1)">−</button>
             <span class="qty-value">${qty}</span>
-            <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', 1)">+</button>
-          </div>
+           <button class="qty-btn" onclick="changeCartQty('${item.id}', '${item.size}', '${item.color || ''}', 1)">+</button>
         </div>
-        <button class="cart-item-remove" onclick="removeFromCart('${item.id}', '${item.size}')">✕</button>
+      <button class="cart-item-remove" onclick="removeFromCart('${item.id}', '${item.size}', '${item.color || ''}')">✕</button>
       </div>
     `;
   });
@@ -5524,12 +5588,13 @@ async function checkoutCart() {
     const qty = item.qty || 1;
     const price = Number(p.price || 0);
     total += price * qty;
-    itemsForOrder.push({
+       itemsForOrder.push({
       id: p.id,
       title: p.title || 'Без названия',
       price: price,
       qty: qty,
       size: item.size || '',
+      color: item.color || '',
       shop: p.shop || '',
       shop_id: p.shop_id || null
     });
@@ -5682,6 +5747,7 @@ shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
   if (inStock) {
     outOfStockEl.style.display = 'none';
     renderSizeOptions(p.sizes || []);
+    renderColorOptions(p.colors || []);
     cartBtn.classList.remove('disabled');
 
     const currentSize = selectedSize || '';
@@ -5788,7 +5854,55 @@ function goToSlide(index) {
 
   // === ВЫБОР РАЗМЕРА ===
 let selectedSize = null;
+let selectedColor = null;
 
+   // Палитра — сопоставление названий на русском с CSS-цветами
+const COLOR_MAP = {
+  'чёрный': '#0d0d0d',
+  'черный': '#0d0d0d',
+  'black': '#0d0d0d',
+  'белый': '#ffffff',
+  'white': '#ffffff',
+  'серый': '#888888',
+  'gray': '#888888',
+  'grey': '#888888',
+  'бежевый': '#d4c4a8',
+  'beige': '#d4c4a8',
+  'хаки': '#7d8b5c',
+  'khaki': '#7d8b5c',
+  'красный': '#e63946',
+  'red': '#e63946',
+  'синий': '#3b5bdb',
+  'blue': '#3b5bdb',
+  'голубой': '#74c0fc',
+  'green': '#2f9e44',
+  'зелёный': '#2f9e44',
+  'зеленый': '#2f9e44',
+  'жёлтый': '#fcc419',
+  'желтый': '#fcc419',
+  'yellow': '#fcc419',
+  'розовый': '#f783ac',
+  'pink': '#f783ac',
+  'коричневый': '#8b5a2b',
+  'brown': '#8b5a2b',
+  'бордовый': '#800020',
+  'burgundy': '#800020',
+  'оливковый': '#6b8e23',
+  'olive': '#6b8e23',
+  'молочный': '#f5f5dc',
+  'молочко': '#f5f5dc',
+  'сиреневый': '#b197fc',
+  'лиловый': '#b197fc',
+  'фиолетовый': '#7048e8',
+  'purple': '#7048e8',
+  'оранжевый': '#f76707',
+  'orange': '#f76707'
+};
+
+function getColorHex(name) {
+  const key = String(name || '').toLowerCase().trim();
+  return COLOR_MAP[key] || '#888888'; // по умолчанию серый
+}
 function renderSizeOptions(sizes) {
   const section = document.getElementById('m-size-section');
   const optionsEl = document.getElementById('m-size-options');
@@ -5863,7 +5977,54 @@ function selectSize(size, chipEl) {
   // === ОТЗЫВЫ ===
 let selectedReviewRating = 0;
 let reviewPhotos = []; // массив URL загруженных фото  
+function renderColorOptions(colors) {
+  const section = document.getElementById('m-color-section');
+  const optionsEl = document.getElementById('m-color-options');
 
+  let cleanColors = [];
+  if (Array.isArray(colors)) {
+    cleanColors = colors.map(c => String(c).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+  } else if (typeof colors === 'string' && colors.trim()) {
+    cleanColors = colors.replace(/[\{\}\"\']/g, '').split(',').map(c => c.trim()).filter(Boolean);
+  }
+
+  selectedColor = null;
+  optionsEl.innerHTML = '';
+
+  if (cleanColors.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  if (cleanColors.length === 1) {
+    selectedColor = cleanColors[0];
+    const chip = document.createElement('div');
+    chip.className = 'color-chip selected';
+    chip.style.background = getColorHex(cleanColors[0]);
+    chip.title = cleanColors[0];
+    optionsEl.appendChild(chip);
+    return;
+  }
+
+  cleanColors.forEach(color => {
+    const chip = document.createElement('div');
+    chip.className = 'color-chip';
+    chip.style.background = getColorHex(color);
+    chip.title = color;
+    chip.onclick = () => selectColor(color, chip);
+    optionsEl.appendChild(chip);
+  });
+}
+
+function selectColor(color, chipEl) {
+  selectedColor = color;
+  document.querySelectorAll('#m-color-options .color-chip').forEach(chip => {
+    chip.classList.remove('selected');
+  });
+  if (chipEl) chipEl.classList.add('selected');
+}
 function openReviewsScreen() {
   document.getElementById('reviews-screen').classList.add('active');
   tg.BackButton.show();
@@ -6913,6 +7074,7 @@ async function openProductForm() {
   // Загружаем магазины в dropdown
   await populateShopDropdown();
   document.getElementById('pf-shop-id').value = '';
+  document.getElementById('pf-colors').value = '';
 
   document.getElementById('product-form-modal').style.display = 'block';
   tg.BackButton.show();
@@ -6958,6 +7120,14 @@ async function editProduct(id) {
       sizesStr = p.sizes.replace(/[\{\}\"\']/g, '').trim();
     }
     document.getElementById('pf-sizes').value = sizesStr;
+       // Цвета
+    let colorsStr = '';
+    if (Array.isArray(p.colors)) {
+      colorsStr = p.colors.map(c => String(c).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean).join(', ');
+    } else if (typeof p.colors === 'string') {
+      colorsStr = p.colors.replace(/[\{\}\"\']/g, '').trim();
+    }
+    document.getElementById('pf-colors').value = colorsStr;
        // Фото — загружаем в массив и показываем превью
     uploadedPhotos = [];
     if (Array.isArray(p.image_urls)) {
@@ -6987,6 +7157,7 @@ async function saveProduct() {
   const shopIdRaw = document.getElementById('pf-shop-id').value;
   const shopId = shopIdRaw ? Number(shopIdRaw) : null;
   const sizesStr = document.getElementById('pf-sizes').value.trim();
+  const colorsStr = document.getElementById('pf-colors').value.trim();
   const gender = document.getElementById('pf-gender').value;
   const deliveryDaysRaw = document.getElementById('pf-delivery-days').value.trim();
   const deliveryDays = deliveryDaysRaw ? Number(deliveryDaysRaw) : null;
@@ -7007,12 +7178,16 @@ async function saveProduct() {
     ? sizesStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
     : [];
 
+   const colorsArr = colorsStr
+    ? colorsStr.split(',').map(c => c.trim()).filter(Boolean)
+    : [];
+
   const urlsFromTextarea = imagesStr
     ? imagesStr.split(',').map(s => s.trim()).filter(Boolean)
     : [];
   const allImages = [...new Set([...uploadedPhotos, ...urlsFromTextarea])];
 
-   const productData = {
+     const productData = {
     title,
     price,
     category,
@@ -7020,11 +7195,11 @@ async function saveProduct() {
     gender: gender,
     delivery_days: deliveryDays,
     sizes: sizesArr,
+    colors: colorsArr,
     image_urls: allImages,
     description,
     in_stock: inStock
   };
-
   try {
     const wasEditing = !!editingProductId;
     await adminCall('product_save', { id: editingProductId, data: productData });
@@ -8411,13 +8586,14 @@ function updateCategoryChips() {
 }
 
    // Изменение количества товара в корзине
-function changeCartQty(id, size, delta) {
+function changeCartQty(id, size, color, delta) {
   const strId = String(id);
   const strSize = String(size || '');
+  const strColor = String(color || '');
 
-  const item = cart.find(it => it.id === strId && it.size === strSize);
-  if (!item) return;
-
+  const item = cart.find(it =>
+    it.id === strId && it.size === strSize && (it.color || '') === strColor
+  );
   const newQty = (item.qty || 1) + delta;
 
   if (newQty < 1) {
