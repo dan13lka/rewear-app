@@ -5793,28 +5793,28 @@ async function submitCheckout() {
   }
 
   try {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data, error } = await client.from('orders').insert({
-      buyer_tg_id: user.id || null,
-      buyer_username: buyerUsername,
-      buyer_name: buyerName,
-      items: pendingOrderData.itemsForOrder,
-      total_sum: pendingOrderData.finalTotal,
-      status: 'processing',
-      notes: pendingOrderData.promoCode
-        ? `Промокод: ${pendingOrderData.promoCode} (-${pendingOrderData.promoDiscount.toLocaleString('ru-RU')} сум)`
-        : null,
-      delivery_name: name,
-      delivery_phone: phone,
-      delivery_city: city,
-      delivery_address: address,
-      delivery_comment: comment || null,
-      prepayment_claimed: true,
-      receipt_url: receiptUrl
-    }).select().single();
+        const orderResponse = await fetch(SUPABASE_URL + '/functions/v1/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        initData: tg.initData,
+        action: 'create_order',
+        payload: {
+          items: pendingOrderData.itemsForOrder,
+          total_sum: pendingOrderData.finalTotal,
+          notes: pendingOrderData.promoCode ? `Промокод: ${pendingOrderData.promoCode}` : null,
+          delivery: { name, phone, city, address, comment },
+          prepayment_sum: pendingOrderData.prepaySum,
+          prepayment_percent: pendingOrderData.prepayPercent,
+          receipt_url: receiptUrl
+        }
+      })
+    });
 
-    if (error) throw error;
-    const orderId = data.id;
+    const orderJson = await orderResponse.json();
+    if (!orderResponse.ok || !orderJson.ok) throw new Error(orderJson.error || 'Ошибка сервера');
+    
+    const orderId = orderJson.data.id;
 
     try {
       await fetch(SUPABASE_URL + '/functions/v1/notify-order', {
@@ -7585,7 +7585,30 @@ async function loadAdminOrders() {
           </div>
         `;
       });
-
+      // ===== БЛОК ДОСТАВКИ =====
+      let deliveryHtml = '';
+      if (order.delivery_name) {
+        deliveryHtml = `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #222; font-size: 12px; color: #ccc; line-height: 1.6;">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">📦 Доставка</div>
+            <div>👤 ${escapeHtml(order.delivery_name)}</div>
+            <div>📞 ${escapeHtml(order.delivery_phone || '')}</div>
+            <div>🏙 ${escapeHtml(order.delivery_city || '')}, ${escapeHtml(order.delivery_address || '')}</div>
+            ${order.delivery_comment ? `<div style="color:#888;">💬 ${escapeHtml(order.delivery_comment)}</div>` : ''}
+            
+            ${order.receipt_url ? `
+              <div style="margin-top: 8px;">
+                <a href="${escapeHtml(order.receipt_url)}" target="_blank" style="color: #6db8ff; font-weight: 600; text-decoration: none; font-size: 12px;">🧾 Посмотреть скриншот чека</a>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 8px; padding: 6px 10px; background: rgba(255,184,0,0.1); border-radius: 6px; display: inline-block; color: #ffb800; font-weight: 700; font-size: 11px;">
+              ⚠️ Клиент заявил об оплате предоплаты
+            </div>
+          </div>
+        `;
+      }
+      // =========================
       // Кнопка "Написать клиенту" — если есть username
       let writeBtnHtml = '';
       if (order.buyer_username) {
@@ -7626,6 +7649,7 @@ async function loadAdminOrders() {
             </div>
             ${writeBtnHtml}
           </div>
+                  ${deliveryHtml}
           ${order.notes ? `<div class="admin-order-notes">${escapeHtml(order.notes)}</div>` : ''}
         </div>
       `;
