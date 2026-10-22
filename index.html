@@ -4556,6 +4556,87 @@ body {
     <button class="btn-form-save" onclick="saveProduct()">Сохранить</button>
   </div>
 </div>
+ <!-- МОДАЛКА ОФОРМЛЕНИЯ ЗАКАЗА -->
+<div id="checkout-modal" class="modal">
+  <button class="modal-close" onclick="closeCheckout()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+
+  <div class="form-title" style="margin-top: 40px;">Оформление заказа</div>
+
+  <div class="form-group">
+    <label class="form-label">Как к вам обращаться? *</label>
+    <input type="text" id="co-name" class="form-input" placeholder="Иван">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Телефон *</label>
+    <input type="tel" id="co-phone" class="form-input" placeholder="+998 90 123 45 67">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Город *</label>
+    <input type="text" id="co-city" class="form-input" placeholder="Ташкент">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Адрес (район, улица, дом, кв) *</label>
+    <textarea id="co-address" class="form-textarea" placeholder="Юнусабадский р-н, ул. Амира Темура, 15, кв. 24"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Комментарий курьеру (необязательно)</label>
+    <input type="text" id="co-comment" class="form-input" placeholder="Позвонить за час">
+  </div>
+
+  <!-- Блок предоплаты -->
+  <div style="background: rgba(255,184,0,0.08); border: 1px solid rgba(255,184,0,0.3); border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+    <div style="font-size: 12px; font-weight: 700; color: #ffb800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+      ⚠️ Предоплата <span id="co-prepay-percent">50</span>%
+    </div>
+    <div style="font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 14px;">
+      Для подтверждения заказа переведите <strong id="co-prepay-sum" style="color:#fff;">0 сум</strong> на карту:
+    </div>
+    <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+      <div style="font-size: 11px; color: #888; margin-bottom: 4px;">Номер карты:</div>
+      <div id="co-card-number" style="font-size: 17px; font-weight: 800; color: #fff; letter-spacing: 1px; margin-bottom: 8px; cursor: pointer;" onclick="copyCardNumber()">8600 0000 0000 0000</div>
+      <div style="font-size: 11px; color: #888; margin-bottom: 2px;">Владелец:</div>
+      <div id="co-card-owner" style="font-size: 13px; font-weight: 600; color: #fff;">ИВАНОВ ИВАН</div>
+    </div>
+    <div style="font-size: 11px; color: #888; margin-bottom: 12px;">
+      Нажмите на номер карты, чтобы скопировать
+    </div>
+    <div style="font-size: 11px; color: #ffb800; line-height: 1.4;">
+      После перевода прикрепите скриншот чека (ниже) и нажмите «Я оплатил». Мы проверим поступление и свяжемся с вами.
+    </div>
+  </div>
+
+  <!-- Поле для скриншота чека -->
+  <div class="form-group">
+    <label class="form-label">Скриншот чека (необязательно, но ускорит проверку)</label>
+    <input type="file" id="co-receipt-input" accept="image/*" style="display: none;" onchange="handleReceiptUpload(event)">
+    <button type="button" class="photo-upload-btn" onclick="document.getElementById('co-receipt-input').click()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      Прикрепить скриншот
+    </button>
+    <div id="co-receipt-preview" style="display: none; position: relative; width: 100%; max-width: 120px; aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-strong); background: var(--bg-card-2); margin-top: 8px;">
+      <img id="co-receipt-img" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+      <button type="button" onclick="removeReceipt()" style="position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.75); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 14px;">×</button>
+    </div>
+  </div>
+
+  <div class="form-actions" style="margin-top: 16px; margin-bottom: 20px;">
+    <button class="btn-form-cancel" onclick="closeCheckout()">Отмена</button>
+    <button class="btn-form-save" id="co-submit-btn" onclick="submitCheckout()">Я оплатил</button>
+  </div>
+</div>
   <!-- МОДАЛКА ФОРМЫ МАГАЗИНА -->
 <div id="shop-form-modal" class="modal">
   <button class="modal-close" onclick="closeShopForm()">
@@ -5558,9 +5639,11 @@ function closeOrderSuccess() {
 
 let checkoutInProgress = false;
 
-async function checkoutCart() {
-  if (checkoutInProgress) return;
+let pendingOrderData = null;
+let receiptFile = null;
+let receiptPreviewUrl = null;
 
+async function checkoutCart() {
   const validItems = cart.filter(item => loadedProducts.some(p => String(p.id) === item.id));
   if (validItems.length === 0) return;
 
@@ -5568,17 +5651,7 @@ async function checkoutCart() {
     const p = loadedProducts.find(prod => String(prod.id) === item.id);
     return p && p.in_stock === false;
   });
-  if (hasSold) {
-    tg.showAlert('Уберите из корзины товары, которых нет в наличии');
-    return;
-  }
-
-  checkoutInProgress = true;
-  const btn = document.querySelector('#cart-checkout-bar .btn-checkout');
-  if (btn) {
-    btn.classList.add('disabled');
-    btn.innerText = 'Оформляем...';
-  }
+  if (hasSold) return tg.showAlert('Уберите из корзины товары, которых нет в наличии');
 
   let total = 0;
   const itemsForOrder = [];
@@ -5588,7 +5661,7 @@ async function checkoutCart() {
     const qty = item.qty || 1;
     const price = Number(p.price || 0);
     total += price * qty;
-       itemsForOrder.push({
+    itemsForOrder.push({
       id: p.id,
       title: p.title || 'Без названия',
       price: price,
@@ -5600,10 +5673,6 @@ async function checkoutCart() {
     });
   });
 
-  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
-  const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
-  const buyerUsername = user.username || '';
-
   let finalTotal = total;
   let promoCode = null;
   let promoDiscount = 0;
@@ -5613,78 +5682,183 @@ async function checkoutCart() {
     promoCode = appliedPromo.code;
   }
 
-  // 1. Сохраняем заказ со статусом "В обработке"
-  let orderId = null;
+  let cardNumber = '8600 0000 0000 0000';
+  let cardOwner = 'ИВАНОВ ИВАН';
+  let prepayPercent = 50;
+
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: settings } = await client.from('app_settings').select('key, value');
+    if (settings) {
+      settings.forEach(s => {
+        if (s.key === 'card_number') cardNumber = s.value;
+        if (s.key === 'card_owner') cardOwner = s.value;
+        if (s.key === 'prepayment_percent') prepayPercent = Number(s.value) || 50;
+      });
+    }
+  } catch (err) {}
+
+  const prepaySum = Math.round(finalTotal * prepayPercent / 100);
+
+  document.getElementById('co-prepay-percent').innerText = prepayPercent;
+  document.getElementById('co-prepay-sum').innerText = prepaySum.toLocaleString('ru-RU') + ' сум';
+  document.getElementById('co-card-number').innerText = cardNumber;
+  document.getElementById('co-card-owner').innerText = cardOwner;
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const nameInput = document.getElementById('co-name');
+  if (!nameInput.value && user.first_name) nameInput.value = user.first_name;
+
+  pendingOrderData = { itemsForOrder, finalTotal, promoCode, promoDiscount, prepaySum, prepayPercent };
+
+  document.getElementById('checkout-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeCheckout);
+}
+
+function closeCheckout() {
+  document.getElementById('checkout-modal').style.display = 'none';
+  tg.BackButton.hide();
+  pendingOrderData = null;
+  receiptFile = null;
+  if (receiptPreviewUrl) {
+    URL.revokeObjectURL(receiptPreviewUrl);
+    receiptPreviewUrl = null;
+  }
+  document.getElementById('co-receipt-preview').style.display = 'none';
+}
+
+function copyCardNumber() {
+  const raw = document.getElementById('co-card-number').innerText.replace(/\s/g, '');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(raw).then(() => showToast('Номер скопирован')).catch(() => {});
+  }
+}
+
+async function handleReceiptUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  if (file.size > 5 * 1024 * 1024) return tg.showAlert('Файл больше 5 МБ');
+  
+  receiptFile = file;
+  receiptPreviewUrl = URL.createObjectURL(file);
+  
+  document.getElementById('co-receipt-img').src = receiptPreviewUrl;
+  document.getElementById('co-receipt-preview').style.display = 'block';
+}
+
+function removeReceipt() {
+  receiptFile = null;
+  if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+  receiptPreviewUrl = null;
+  document.getElementById('co-receipt-preview').style.display = 'none';
+  document.getElementById('co-receipt-input').value = '';
+}
+
+async function submitCheckout() {
+  if (!pendingOrderData) return;
+
+  const name = document.getElementById('co-name').value.trim();
+  const phone = document.getElementById('co-phone').value.trim();
+  const city = document.getElementById('co-city').value.trim();
+  const address = document.getElementById('co-address').value.trim();
+  const comment = document.getElementById('co-comment').value.trim();
+
+  if (!name) return tg.showAlert('Укажите, как к вам обращаться');
+  if (!phone) return tg.showAlert('Введите телефон');
+  if (!city) return tg.showAlert('Введите город');
+  if (!address) return tg.showAlert('Введите адрес');
+
+  const btn = document.getElementById('co-submit-btn');
+  btn.disabled = true;
+  btn.innerText = 'Отправляем...';
+
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const buyerName = ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Без имени';
+  const buyerUsername = user.username || '';
+
+  let receiptUrl = null;
+
+  if (receiptFile) {
+    try {
+      const compressed = await compressImage(receiptFile, 1000, 0.8);
+      receiptUrl = await uploadViaServer('receipts', compressed, 'jpg', 'image/jpeg');
+    } catch (err) {
+      console.error('Ошибка загрузки чека:', err);
+      btn.disabled = false;
+      btn.innerText = 'Я оплатил';
+      return tg.showAlert('Не удалось загрузить чек, попробуйте ещё раз');
+    }
+  }
+
   try {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const { data, error } = await client.from('orders').insert({
       buyer_tg_id: user.id || null,
       buyer_username: buyerUsername,
       buyer_name: buyerName,
-      items: itemsForOrder,
-      total_sum: finalTotal,
+      items: pendingOrderData.itemsForOrder,
+      total_sum: pendingOrderData.finalTotal,
       status: 'processing',
-      notes: promoCode ? `Промокод: ${promoCode} (-${promoDiscount.toLocaleString('ru-RU')} сум)` : null
+      notes: pendingOrderData.promoCode
+        ? `Промокод: ${pendingOrderData.promoCode} (-${pendingOrderData.promoDiscount.toLocaleString('ru-RU')} сум)`
+        : null,
+      delivery_name: name,
+      delivery_phone: phone,
+      delivery_city: city,
+      delivery_address: address,
+      delivery_comment: comment || null,
+      prepayment_claimed: true,
+      receipt_url: receiptUrl
     }).select().single();
+
     if (error) throw error;
-    orderId = data.id;
-  } catch (err) {
-    console.error('Ошибка сохранения заказа:', err);
-    checkoutInProgress = false;
-    renderCart();
-    tg.showAlert('Не удалось сохранить заказ. Попробуйте ещё раз.');
-    return;
-  }
+    const orderId = data.id;
 
-  // 2. Уведомление в бота
-  try {
-    await fetch(SUPABASE_URL + '/functions/v1/notify-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: orderId,
-        buyer_name: buyerName,
-        buyer_username: buyerUsername,
-        items: itemsForOrder,
-        total_sum: finalTotal,
-        promo_code: promoCode,
-        promo_discount: promoDiscount
-      })
-    });
-  } catch (err) {
-    console.error('Ошибка отправки уведомления:', err);
-  }
-
-  // 3. Записываем использование промокода
-  if (appliedPromo && user.id) {
     try {
-      const clientPromo = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      await clientPromo.from('promo_uses').insert({
-        promo_code: appliedPromo.code,
-        user_tg_id: user.id
+      await fetch(SUPABASE_URL + '/functions/v1/notify-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          buyer_name: buyerName,
+          buyer_username: buyerUsername,
+          items: pendingOrderData.itemsForOrder,
+          total_sum: pendingOrderData.finalTotal,
+          promo_code: pendingOrderData.promoCode,
+          promo_discount: pendingOrderData.promoDiscount,
+          delivery: { name, phone, city, address, comment },
+          prepayment_sum: pendingOrderData.prepaySum,
+          prepayment_percent: pendingOrderData.prepayPercent,
+          receipt_url: receiptUrl
+        })
       });
-    } catch (err) {
-      console.error('Ошибка записи использования промокода:', err);
+    } catch (err) {}
+
+    if (pendingOrderData.promoCode && user.id) {
+      try {
+        await client.from('promo_uses').insert({
+          promo_code: pendingOrderData.promoCode,
+          user_tg_id: user.id
+        });
+      } catch (err) {}
     }
+
+    cart = [];
+    appliedPromo = null;
+    saveState();
+    renderCart();
+    closeCheckout();
+    refreshCatalog();
+    showOrderSuccess();
+
+  } catch (err) {
+    console.error('Ошибка создания заказа:', err);
+    btn.disabled = false;
+    btn.innerText = 'Я оплатил';
+    tg.showAlert('Не удалось создать заказ: ' + err.message);
   }
-
-  // 4. Чистим корзину и показываем экран успеха
-  cart = [];
-  cartSizes = {};
-  appliedPromo = null;
-
-  const promoInputW = document.getElementById('promo-input-wrapper');
-  if (promoInputW) promoInputW.style.display = 'flex';
-  const promoSuccess = document.getElementById('promo-success');
-  if (promoSuccess) promoSuccess.style.display = 'none';
-  const promoInput = document.getElementById('promo-input');
-  if (promoInput) promoInput.value = '';
-
-  saveState();
-  checkoutInProgress = false;
-  renderCart();
-  refreshCatalog();
-  showOrderSuccess();
 }
    function openProduct(index) {
   activeModalIndex = index;
@@ -9433,8 +9607,8 @@ async function openProductByIdFromShopScreen(productId) {
    // === FAQ ===
 const FAQ_DATA = [
   { section: 'Покупателям' },
-  { n: 1, q: 'Как сделать заказ?', a: '1. Открой каталог в приложении<br>2. Выбери товар и нужный размер<br>3. Нажми «В корзину»<br>4. Перейди в корзину и проверь товары<br>5. Если есть промокод, введи его в поле «Промокод» и нажми «Применить»<br>6. Нажми «Купить». Заказ сохранится, и с тобой свяжется менеджер для уточнения деталей.' },
-  { n: 2, q: 'Как оплатить заказ?', a: 'Оплата проходит в два этапа:<br>• <strong>Предоплата 50%</strong> переводом менеджеру после оформления заказа<br>• <strong>Остаток 50%</strong> при получении<br><br>Реквизиты и сумму предоплаты пришлёт менеджер в личных сообщениях.' },
+  { n: 1, q: 'Как сделать заказ?', a: '1. Открой каталог в приложении<br>2. Выбери товар и нужный размер<br>3. Нажми «В корзину»<br>4. Перейди в корзину и проверь товары<br>5. Если есть промокод, введи его в поле «Промокод» и нажми «Применить»<br>6. Нажми «Купить». Заказ сохранится, и мы с тобой свяжемся для уточнения деталей.' },
+  { n: 2, q: 'Как оплатить заказ?', a: 'Оплата проходит в два этапа:<br>• <strong>Предоплата 50%</strong> переводом нам после оформления заказа<br>• <strong>Остаток 50%</strong> при получении<br><br>Реквизиты и сумму предоплаты пришлём мы в личных сообщениях.' },
   { n: 3, q: 'Сколько стоит доставка?', a: '<strong>Доставка по Ташкенту — бесплатная.</strong> Доставка в другие города — обсуждается индивидуально в чате.' },
   { n: 4, q: 'Как быстро приедет заказ?', a: 'Срок доставки указан <strong>на карточке каждого товара</strong> (значок грузовичка, например «до 7 дней»).' },
   { n: 5, q: 'Что если товар не подошёл по размеру?', a: 'Все размеры и замеры указаны в карточке товара. <strong>Перед оплатой уточни размер у менеджера</strong>, если есть сомнения.' },
@@ -9573,7 +9747,7 @@ function getOrderStatusInfo(status) {
     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
   </div>
   <div class="order-success-title">Заказ оформлен</div>
-  <div class="order-success-text">Ожидайте, с вами свяжется менеджер для уточнения деталей.</div>
+ <div class="order-success-text">Мы получили ваш заказ и уведомление об оплате. Проверим поступление и свяжемся с вами в течение 30 минут.</div>
   <div class="order-success-note">(Убедитесь в настройках, что вам можно писать в личные сообщения)</div>
   <button class="order-success-btn" onclick="closeOrderSuccess()">Понятно</button>
 </div>
