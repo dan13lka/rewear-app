@@ -3841,6 +3841,33 @@ body {
   background-position: right 8px center;
   padding-right: 28px;
 }
+   .price-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.old-price {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+.sale-price {
+  font-size: 14px;
+  color: #ff4d4d;
+  font-weight: 800;
+}
+.sale-badge {
+  background: #ff4d4d;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
  </style>
 </head>
 <body>
@@ -4477,6 +4504,11 @@ body {
   <div class="form-group">
     <label class="form-label">Цена (сум) *</label>
     <input type="number" id="pf-price" class="form-input" placeholder="450000">
+  </div>
+
+   <div class="form-group">
+    <label class="form-label">Цена со скидкой (необязательно)</label>
+    <input type="number" id="pf-old-price" class="form-input" placeholder="Например: 350000">
   </div>
 
   <div class="form-group">
@@ -5222,7 +5254,22 @@ async function loadProductRatings() {
     }
 
     const isFav = favorites.includes(String(product.id));
-    const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+    const p    let priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+    let oldPriceHtml = '';
+    if (product.old_price && Number(product.old_price) > 0 && Number(product.old_price) < Number(product.price)) {
+      const discountPercent = Math.round((1 - Number(product.old_price) / Number(product.price)) * 100);
+      const oldPriceVal = Number(product.price).toLocaleString('ru-RU');
+      priceVal = Number(product.old_price).toLocaleString('ru-RU');
+      oldPriceHtml = `
+        <div class="price-block">
+          <div class="old-price">${oldPriceVal} сум</div>
+          <div class="sale-price">${priceVal} сум</div>
+          <div class="sale-badge">-${discountPercent}%</div>
+        </div>
+      `;
+    } else {
+      oldPriceHtml = `<div class="card-price" style="font-size: 14px; font-weight: 700;">${priceVal} сум</div>`;
+    }riceVal = Number(product.price || 0).toLocaleString('ru-RU');
     const shopName = product.shop || 'RE:WEAR Select';
 
     const inStock = product.in_stock !== false;
@@ -5246,7 +5293,7 @@ async function loadProductRatings() {
              <div class="card-info">
           <div class="card-shop">${shopName}</div>
           <div class="card-title">${product.title || 'Без названия'}</div>
-          <div class="card-price">${priceVal} сум</div>
+                  ${oldPriceHtml}
           <div class="card-meta">${genderBadgeHtml(product.gender)}
             <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
           </div>
@@ -5333,7 +5380,23 @@ function toggleFav(e, id) {
         empty.style.display = 'none';
         favProducts.forEach(product => {
           const originalIndex = loadedProducts.indexOf(product);
-          let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
+                   let priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+          let oldPriceHtml = '';
+          if (product.old_price && Number(product.old_price) > 0 && Number(product.old_price) < Number(product.price)) {
+            const discountPercent = Math.round((1 - Number(product.old_price) / Number(product.price)) * 100);
+            const oldPriceVal = Number(product.price).toLocaleString('ru-RU');
+            priceVal = Number(product.old_price).toLocaleString('ru-RU');
+            oldPriceHtml = `
+              <div class="price-block">
+                <div class="old-price">${oldPriceVal} сум</div>
+                <div class="sale-price">${priceVal} сум</div>
+                <div class="sale-badge">-${discountPercent}%</div>
+              </div>
+            `;
+          } else {
+            oldPriceHtml = `<div class="card-price" style="font-size: 14px; font-weight: 700;">${priceVal} сум</div>`;
+          } 
+         let imageUrl = product.image_urls ? (Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls).replace(/[\{\}\"\']/g, '') : '';
           grid.innerHTML += `
             <div class="card" onclick="openProduct(${originalIndex})">
               <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
@@ -5554,8 +5617,8 @@ function toggleFav(e, id) {
     const product = loadedProducts.find(p => String(p.id) === item.id);
     if (!product) return;
 
-    const qty = item.qty || 1;
-    const price = Number(product.price || 0);
+       const qty = item.qty || 1;
+    const price = Number(product.old_price && Number(product.old_price) > 0 && Number(product.old_price) < Number(product.price) ? product.old_price : product.price);
     const lineSum = price * qty;
 
     totalSum += lineSum;
@@ -5659,7 +5722,7 @@ async function checkoutCart() {
     const p = loadedProducts.find(prod => String(prod.id) === item.id);
     if (!p) return;
     const qty = item.qty || 1;
-    const price = Number(p.price || 0);
+    const price = Number(p.old_price && Number(p.old_price) > 0 && Number(p.old_price) < Number(p.price) ? p.old_price : p.price);
     total += price * qty;
     itemsForOrder.push({
       id: p.id,
@@ -5886,7 +5949,19 @@ async function submitCheckout() {
 const shopName = p.shop || 'RE:WEAR Select';
 shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-right:2px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>${escapeHtml(shopName)}</span>`;
   document.getElementById('m-title').innerText = p.title || 'Без названия';
-  document.getElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
+  document.ge  const mPriceEl = document.getElementById('m-price');
+  if (p.old_price && Number(p.old_price) > 0 && Number(p.old_price) < Number(p.price)) {
+    const discountPercent = Math.round((1 - Number(p.old_price) / Number(p.price)) * 100);
+    mPriceEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="text-decoration: line-through; color: var(--text-tertiary); font-size: 16px; font-weight: 600;">${Number(p.price).toLocaleString('ru-RU')} сум</span>
+        <span style="color: #ff4d4d; font-size: 22px; font-weight: 800;">${Number(p.old_price).toLocaleString('ru-RU')} сум</span>
+        <span style="background: rgba(255,77,77,0.15); color: #ff4d4d; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 800;">-${discountPercent}%</span>
+      </div>
+    `;
+  } else {
+    mPriceEl.innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
+  }tElementById('m-price').innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
   
    document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
    document.getElementById('m-gender').innerHTML =
@@ -7234,7 +7309,7 @@ async function openProductForm() {
 
   document.getElementById('product-form-title').innerText = 'Добавить товар';
   document.getElementById('pf-title').value = '';
-  document.getElementById('pf-price').value = '';
+  document.getElementById('pf-old-price').value = '';
   document.getElementById('pf-category').value = '';
   document.getElementById('pf-sizes').value = '';
   document.getElementById('pf-images').value = '';
@@ -7280,7 +7355,7 @@ async function editProduct(id) {
     await populateShopDropdown();
 
     document.getElementById('pf-title').value = p.title || '';
-    document.getElementById('pf-price').value = p.price || '';
+    document.getElementById('pf-old-price').value = p.old_price || '';
     document.getElementById('pf-category').value = p.category || '';
     document.getElementById('pf-shop-id').value = p.shop_id || '';
     document.getElementById('pf-gender').value = p.gender || 'unisex';
@@ -7327,6 +7402,8 @@ async function editProduct(id) {
 async function saveProduct() {
   const title = document.getElementById('pf-title').value.trim();
   const price = Number(document.getElementById('pf-price').value.trim());
+  const oldPriceRaw = document.getElementById('pf-old-price').value.trim();
+  const oldPrice = oldPriceRaw ? Number(oldPriceRaw) : null;
   const category = document.getElementById('pf-category').value.trim();
   const shopIdRaw = document.getElementById('pf-shop-id').value;
   const shopId = shopIdRaw ? Number(shopIdRaw) : null;
@@ -7364,6 +7441,7 @@ async function saveProduct() {
      const productData = {
     title,
     price,
+    old_price: oldPrice,
     category,
     shop_id: shopId,
     gender: gender,
@@ -8498,7 +8576,22 @@ async function loadShopProducts(shopId) {
       }
 
       const isFav = favorites.includes(String(product.id));
-      const priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+           let priceVal = Number(product.price || 0).toLocaleString('ru-RU');
+      let oldPriceHtml = '';
+      if (product.old_price && Number(product.old_price) > 0 && Number(product.old_price) < Number(product.price)) {
+        const discountPercent = Math.round((1 - Number(product.old_price) / Number(product.price)) * 100);
+        const oldPriceVal = Number(product.price).toLocaleString('ru-RU');
+        priceVal = Number(product.old_price).toLocaleString('ru-RU');
+        oldPriceHtml = `
+          <div class="price-block">
+            <div class="old-price">${oldPriceVal} сум</div>
+            <div class="sale-price">${priceVal} сум</div>
+            <div class="sale-badge">-${discountPercent}%</div>
+          </div>
+        `;
+      } else {
+        oldPriceHtml = `<div class="card-price" style="font-size: 14px; font-weight: 700;">${priceVal} сум</div>`;
+      }
       const inStock = product.in_stock !== false;
       const soldOverlay = inStock ? '' : '<div class="sold-overlay"><span>ПРОДАНО</span></div>';
       const cardClass = inStock ? 'card' : 'card card-sold';
