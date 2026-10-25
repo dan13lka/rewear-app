@@ -5229,80 +5229,116 @@ async function loadProductRatings() {
       applyFilters();
     }
 
-  function renderProducts(products) {
-  const loadingEl = document.getElementById('loading');
-  const gridEl = document.getElementById('catalog-grid');
+    function openProduct(index) {
+  activeModalIndex = index;
+  const p = loadedProducts[index];
+  if (!p) return;
+  trackEvent('view', p.id);
 
-  gridEl.innerHTML = '';
-
-  if (products.length === 0) {
-    loadingEl.style.display = 'block';
-    loadingEl.innerText = "Товары по вашему запросу не найдены.";
-    gridEl.style.display = 'none';
-    return;
+  // Собираем массив фото
+  let images = [];
+  if (p.image_urls) {
+    if (Array.isArray(p.image_urls)) {
+      images = p.image_urls.map(u => String(u).replace(/[\{\}\"\']/g, '').trim()).filter(Boolean);
+    } else {
+      const cleaned = String(p.image_urls).replace(/[\{\}\"\']/g, '').trim();
+      images = cleaned ? [cleaned] : [];
+    }
+  }
+  if (images.length === 0) {
+    images = ['https://images.unsplash.com/photo-1544441893-675973e31985?w=500'];
   }
 
-  loadingEl.style.display = 'none';
-  gridEl.style.display = 'grid';
+  renderGallery(images);
 
-  products.forEach((product) => {
-    const originalIndex = loadedProducts.indexOf(product);
-    let imageUrl = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=500';
-    if (product.image_urls) {
-      imageUrl = Array.isArray(product.image_urls) ? product.image_urls[0] : product.image_urls;
-      imageUrl = imageUrl.replace(/[\{\}\"\']/g, '');
-    }
-
-    const isFav = favorites.includes(String(product.id));
-    const p    let priceVal = Number(product.price || 0).toLocaleString('ru-RU');
-    let oldPriceHtml = '';
-    if (product.old_price && Number(product.old_price) > 0 && Number(product.old_price) < Number(product.price)) {
-      const discountPercent = Math.round((1 - Number(product.old_price) / Number(product.price)) * 100);
-      const oldPriceVal = Number(product.price).toLocaleString('ru-RU');
-      priceVal = Number(product.old_price).toLocaleString('ru-RU');
-      oldPriceHtml = `
-        <div class="price-block">
-          <div class="old-price">${oldPriceVal} сум</div>
-          <div class="sale-price">${priceVal} сум</div>
-          <div class="sale-badge">-${discountPercent}%</div>
-        </div>
-      `;
-    } else {
-      oldPriceHtml = `<div class="card-price" style="font-size: 14px; font-weight: 700;">${priceVal} сум</div>`;
-    }riceVal = Number(product.price || 0).toLocaleString('ru-RU');
-    const shopName = product.shop || 'RE:WEAR Select';
-
-    const inStock = product.in_stock !== false;
-    const soldOverlay = inStock ? '' : '<div class="sold-overlay"><span>ПРОДАНО</span></div>';
-    const cardClass = inStock ? 'card' : 'card card-sold';
-
-    const ratingHtml = ratingBadgeHtml(product.id);
-
-    const cardHtml = `
-      <div class="${cardClass}" onclick="openProduct(${originalIndex})">
-        <button type="button" class="card-fav-btn" onclick="toggleFav(event, '${product.id}')">
-          <svg id="fav-icon-${product.id}" viewBox="0 0 24 24" fill="${isFav ? '#ff4d4d' : 'none'}" stroke="${isFav ? '#ff4d4d' : '#8c8c8c'}" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        </button>
-        <div class="card-img-wrapper">
-          <img class="card-img" loading="lazy" decoding="async" src="${imageUrl}" alt="${product.title || ''}">
-          ${soldOverlay}
-          ${ratingHtml}
-        </div>
-             <div class="card-info">
-          <div class="card-shop">${shopName}</div>
-          <div class="card-title">${product.title || 'Без названия'}</div>
-                  ${oldPriceHtml}
-          <div class="card-meta">${genderBadgeHtml(product.gender)}
-            <span class="cat-text">${escapeHtml(product.category || 'Без категории')}</span>
-          </div>
-          ${deliveryBadgeHtml(product.delivery_days)}
-        </div>
+ const shopEl = document.getElementById('m-shop');
+const shopName = p.shop || 'RE:WEAR Select';
+shopEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-right:2px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>${escapeHtml(shopName)}</span>`;
+  document.getElementById('m-title').innerText = p.title || 'Без названия';
+  
+  const mPriceEl = document.getElementById('m-price');
+  if (p.old_price && Number(p.old_price) > 0 && Number(p.old_price) < Number(p.price)) {
+    const discountPercent = Math.round((1 - Number(p.old_price) / Number(p.price)) * 100);
+    mPriceEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="text-decoration: line-through; color: var(--text-tertiary); font-size: 16px; font-weight: 600;">${Number(p.price).toLocaleString('ru-RU')} сум</span>
+        <span style="color: #ff4d4d; font-size: 22px; font-weight: 800;">${Number(p.old_price).toLocaleString('ru-RU')} сум</span>
+        <span style="background: rgba(255,77,77,0.15); color: #ff4d4d; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 800;">-${discountPercent}%</span>
       </div>
     `;
-    gridEl.innerHTML += cardHtml;
-  });
+  } else {
+    mPriceEl.innerText = Number(p.price || 0).toLocaleString('ru-RU') + ' сум';
+  }
+  
+   document.getElementById('m-category').innerText = 'Категория: ' + (p.category || '—');
+   document.getElementById('m-gender').innerHTML =
+    genderBadgeHtml(p.gender) + `<span>${genderLabel(p.gender)}</span>`;
+      // Плашка срока доставки
+  const deliveryEl = document.getElementById('m-delivery');
+  if (p.delivery_days && Number(p.delivery_days) > 0) {
+    const n = Number(p.delivery_days);
+    const word = 'дней';
+    deliveryEl.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg>
+      <span>до ${n} ${word}</span>
+    `;
+    deliveryEl.style.display = 'inline-flex';
+  } else {
+    deliveryEl.style.display = 'none';
+  }
+
+  // Проверяем наличие
+   const inStock = p.in_stock !== false;
+  const outOfStockEl = document.getElementById('m-out-of-stock');
+  const sizeSectionEl = document.getElementById('m-size-section');
+  const cartBtn = document.getElementById('m-cart-btn');
+
+   const goCartBtn = document.getElementById('m-go-cart-btn');
+
+  if (inStock) {
+    outOfStockEl.style.display = 'none';
+    renderSizeOptions(p.sizes || []);
+    renderColorOptions(p.colors || []);
+    cartBtn.classList.remove('disabled');
+
+    const currentSize = selectedSize || '';
+    const inCart = cart.some(item => String(item.id) === String(p.id) && item.size === currentSize);
+    if (inCart) {
+      cartBtn.classList.add('in-cart');
+      cartBtn.innerText = '✓ Товар в корзине';
+      if (goCartBtn) goCartBtn.style.display = 'flex';
+    } else {
+      cartBtn.classList.remove('in-cart');
+      cartBtn.innerText = 'Добавить в корзину';
+      if (goCartBtn) goCartBtn.style.display = 'none';
+    }
+  } else {
+    if (sizeSectionEl) sizeSectionEl.style.display = 'none';
+    outOfStockEl.style.display = 'block';
+    cartBtn.classList.add('disabled');
+    cartBtn.classList.remove('in-cart');
+    cartBtn.innerText = 'Нет в наличии';
+    if (goCartBtn) goCartBtn.style.display = 'none';
+  }
+  
+  document.getElementById('m-desc').innerText = p.description || 'Описание отсутствует.';
+  
+  const shopMention = p.shop ? ` [Шоп: ${p.shop}]` : '';
+
+  updateModalFavIcon(p.id);
+  // Загружаем отзывы товара
+  loadProductReviews(p.id);
+  // Загружаем рекомендации
+  loadRelatedProducts(p);
+     
+  document.getElementById('product-modal').style.display = 'block';
+  tg.BackButton.show();
+  tg.BackButton.onClick(closeProduct);
 }
 
     function switchTab(tabName, element) {
